@@ -233,6 +233,7 @@ with st.sidebar:
     time_filter = st.radio(
         "Select Range", 
         ["Last 7 Days", "Last 30 Days", "Year to Date", "Custom"],
+        index=2, # Default to Year to Date
         label_visibility="collapsed",
         horizontal=True
     )
