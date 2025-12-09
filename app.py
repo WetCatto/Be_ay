@@ -118,9 +118,9 @@ st.markdown("""
     }
     .progress-fill {
         height: 100%;
-        background-color: var(--text-color);
+        background-color: #3b82f6; /* Bright blue for visibility in both modes */
         border-radius: 999px;
-        opacity: 0.8;
+        opacity: 1.0;
     }
     .val-text {
         font-size: 13px;
@@ -334,7 +334,7 @@ with col_l1:
     ts_data['MA'] = ts_data['Revenue'].rolling(window=3).mean()
     
     fig_ts = go.Figure()
-    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['Revenue'], name='Actual', line=dict(color='#0f172a', width=2)))
+    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['Revenue'], name='Actual', line=dict(color='#3b82f6', width=2))) # Blue-500 for visibility
     fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['MA'], name='Forecast', line=dict(color='#f97316', dash='dash'))) 
     
     fig_ts.update_layout(
@@ -433,11 +433,14 @@ with col_m2:
     sunburst_data = curr_sales[curr_sales['Product_Category'].isin(top_cats)].groupby(['Product_Category', 'Product_Name'])['Revenue'].sum().reset_index()
     sunburst_data = sunburst_data.groupby('Product_Category').apply(lambda x: x.nlargest(3, 'Revenue')).reset_index(drop=True)
     
+    # Custom Theme Colors (Blue, Orange, Emerald, Violet, Cyan)
+    theme_colors = ['#3b82f6', '#f97316', '#10b981', '#8b5cf6', '#06b6d4', '#ec4899']
+    
     fig_sb = px.sunburst(
         sunburst_data,
         path=['Product_Category', 'Product_Name'],
         values='Revenue',
-        color_discrete_sequence=px.colors.qualitative.Prism
+        color_discrete_sequence=theme_colors
     )
     fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)') # Increased height to fill space
     st.plotly_chart(fig_sb, use_container_width=True)
