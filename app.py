@@ -253,7 +253,7 @@ with st.sidebar:
         ["All Time", "Last 7 Days", "Last 30 Days", "Year to Date", "Custom"],
         index=3, # Default to Year to Date
         label_visibility="collapsed",
-        horizontal=True
+        horizontal=False
     )
     
     max_date = df_sales['Date'].max()
