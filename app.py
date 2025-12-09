@@ -9,7 +9,7 @@ from datetime import timedelta
 # 1. CONFIGURATION & STYLING
 # ==========================================
 st.set_page_config(
-    page_title="Executive Dashboard",
+    page_title="Maven Toys Dashboard",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -17,19 +17,42 @@ st.set_page_config(
 # Shadcn UI Inspired CSS (Refined & Dark Mode Friendly)
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
     
     .stApp {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Poppins', sans-serif;
         /* Adaptive background */
     }
     
+    /* Smooth Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes grow-width { 
+        from { width: 0; } 
+    }
+    
+    div[data-testid="metric-container"], 
+    .stPlotlyChart, 
+    .prod-table, 
+    .location-row {
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background-color: #3b82f6; /* Bright blue */
+        border-radius: 999px;
+        opacity: 1.0;
+        animation: grow-width 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; /* Bar Animation */
+    }
+
     /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background-color: var(--secondary-background-color);
         border-right: 1px solid rgba(128, 128, 128, 0.2);
     }
-    
     /* Main Header */
     .main-header {
         font-size: 26px;
@@ -39,6 +62,7 @@ st.markdown("""
         display: flex;
         align-items: center;
         gap: 12px;
+        line-height: 1.5; /* Prevent clipping */
     }
     
     /* Metrics Override */
@@ -116,12 +140,6 @@ st.markdown("""
         border-radius: 999px;
         overflow: hidden;
     }
-    .progress-fill {
-        height: 100%;
-        background-color: #3b82f6; /* Bright blue for visibility in both modes */
-        border-radius: 999px;
-        opacity: 1.0;
-    }
     .val-text {
         font-size: 13px;
         font-weight: 600;
@@ -183,10 +201,9 @@ st.markdown("""
 
     /* Clean up gaps */
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 3.5rem; /* Increased to avoid cutoff */
         padding-bottom: 2rem;
     }
-</style>
 """, unsafe_allow_html=True)
 
 # ==========================================
@@ -201,8 +218,10 @@ def load_and_prep_data():
         df_inventory = pd.read_csv('inventory.csv')
 
         df_sales['Date'] = pd.to_datetime(df_sales['Date'])
-        df_products['Product_Cost'] = df_products['Product_Cost'].str.replace('$', '').str.strip().astype(float)
-        df_products['Product_Price'] = df_products['Product_Price'].str.replace('$', '').str.strip().astype(float)
+        # Clean costs
+        for col in ['Product_Cost', 'Product_Price']:
+             if df_products[col].dtype == object:
+                df_products[col] = df_products[col].str.replace('$', '').str.strip().astype(float)
 
         sales_master = df_sales.merge(df_products, on='Product_ID', how='left')
         sales_master = sales_master.merge(df_stores, on='Store_ID', how='left')
@@ -210,7 +229,6 @@ def load_and_prep_data():
         sales_master['Revenue'] = sales_master['Units'] * sales_master['Product_Price']
         sales_master['Cost'] = sales_master['Units'] * sales_master['Product_Cost']
         sales_master['Profit'] = sales_master['Revenue'] - sales_master['Cost']
-        sales_master['Margin_Percent'] = (sales_master['Profit'] / sales_master['Revenue']).fillna(0) * 100
 
         inv_master = df_inventory.merge(df_products, on='Product_ID', how='left')
         inv_master = inv_master.merge(df_stores, on='Store_ID', how='left')
@@ -294,34 +312,146 @@ filtered_inv = df_inventory[mask_inv]
 # ==========================================
 # 4. MAIN CONTENT
 # ==========================================
-st.markdown('<div class="main-header">📊 Executive Dashboard</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">📊 Maven Toys Dashboard</div>', unsafe_allow_html=True)
 
-# ---> BLOCK 1: KPIs
+# ---> BLOCK 1: KPIs (Animated)
+import streamlit.components.v1 as components
+
 def calc_kpi(current_val, prev_val, is_currency=False):
     delta = current_val - prev_val
     pct = (delta / prev_val * 100) if prev_val != 0 else 0
-    fmt = "${:,.0f}" if is_currency else "{:,.0f}"
-    return fmt.format(current_val), f"{pct:+.1f}%"
+    return current_val, pct
 
-curr_rev = curr_sales['Revenue'].sum()
-curr_profit = curr_sales['Profit'].sum()
-curr_units = curr_sales['Units'].sum()
-stock_on_hand = filtered_inv['Stock_On_Hand'].sum()
+# Prepare Data
+kpi_rev, delta_rev = calc_kpi(curr_sales['Revenue'].sum(), prev_sales['Revenue'].sum(), True)
+kpi_profit, delta_profit = calc_kpi(curr_sales['Profit'].sum(), prev_sales['Profit'].sum(), True)
+kpi_units, delta_units = calc_kpi(curr_sales['Units'].sum(), prev_sales['Units'].sum(), False)
+inv_stock = filtered_inv['Stock_On_Hand'].sum()
 
-# Prev metrics
-prev_rev = prev_sales['Revenue'].sum()
-prev_profit = prev_sales['Profit'].sum()
-prev_units = prev_sales['Units'].sum()
+# Custom Javascript Component for Ticking Numbers
+kpi_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body {{ margin: 0; font-family: 'Inter', sans-serif; background-color: transparent; }}
+    .kpi-container {{
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        width: 100%;
+    }}
+    .kpi-card {{
+        background-color: var(--bg-color, #ffffff);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: 0.5rem;
+        padding: 20px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+    }}
+    .kpi-label {{
+        font-size: 14px;
+        color: var(--text-muted, #64748b);
+        font-weight: 500;
+        margin-bottom: 4px;
+    }}
+    .kpi-value {{
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-main, #0f172a);
+    }}
+    .kpi-delta {{
+        font-size: 13px;
+        font-weight: 500;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }}
+    .delta-pos {{ color: #16a34a; background-color: rgba(22, 163, 74, 0.1); padding: 2px 6px; border-radius: 99px; width: fit-content; }}
+    .delta-neg {{ color: #dc2626; background-color: rgba(220, 38, 38, 0.1); padding: 2px 6px; border-radius: 99px; width: fit-content; }}
+</style>
+</head>
+<body>
+<div class="kpi-container">
+    <!-- Revenue -->
+    <div class="kpi-card">
+        <div class="kpi-label">Revenue</div>
+        <div class="kpi-value" id="val-rev">0</div>
+        <div class="kpi-delta {('delta-pos' if delta_rev >= 0 else 'delta-neg')}">
+            {('+' if delta_rev >= 0 else '')}{delta_rev:.1f}%
+        </div>
+    </div>
+    <!-- Profit -->
+    <div class="kpi-card">
+        <div class="kpi-label">Profit</div>
+        <div class="kpi-value" id="val-prof">0</div>
+        <div class="kpi-delta {('delta-pos' if delta_profit >= 0 else 'delta-neg')}">
+            {('+' if delta_profit >= 0 else '')}{delta_profit:.1f}%
+        </div>
+    </div>
+    <!-- Units -->
+    <div class="kpi-card">
+        <div class="kpi-label">Units Sold</div>
+        <div class="kpi-value" id="val-unit">0</div>
+        <div class="kpi-delta {('delta-pos' if delta_units >= 0 else 'delta-neg')}">
+            {('+' if delta_units >= 0 else '')}{delta_units:.1f}%
+        </div>
+    </div>
+    <!-- Stock -->
+    <div class="kpi-card">
+        <div class="kpi-label">Stock On Hand</div>
+        <div class="kpi-value" id="val-stock">0</div>
+        <div class="kpi-delta" style="color: #64748b; font-size: 12px;">Active Stock</div>
+    </div>
+</div>
 
-kpi_rev, delta_rev = calc_kpi(curr_rev, prev_rev, True)
-kpi_profit, delta_profit = calc_kpi(curr_profit, prev_profit, True)
-kpi_units, delta_units = calc_kpi(curr_units, prev_units, False)
+<script>
+    function animateValue(obj, start, end, duration, format='$') {{
+        let startTimestamp = null;
+        const step = (timestamp) => {{
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            const val = Math.floor(progress * (end - start) + start);
+            
+            let formatted = val.toLocaleString();
+            if (format === '$') formatted = '$' + formatted;
+            
+            obj.innerHTML = formatted;
+            if (progress < 1) {{
+                window.requestAnimationFrame(step);
+            }} else {{
+                // Ensure final value is precise
+                let final = end.toLocaleString();
+                if (format === '$') final = '$' + final;
+                obj.innerHTML = final;
+            }}
+        }};
+        window.requestAnimationFrame(step);
+    }}
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Revenue", kpi_rev, delta_rev)
-c2.metric("Profit", kpi_profit, delta_profit)
-c3.metric("Units Sold", kpi_units, delta_units)
-c4.metric("Stock On Hand", f"{stock_on_hand:,.0f}", help="Current physical stock")
+    // Theme Detection script to adjust colors inside iframe
+    const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (isDark) {{
+        document.documentElement.style.setProperty('--bg-color', '#262626'); // Darker bg
+        document.documentElement.style.setProperty('--border-color', 'rgba(128,128,128,0.2)');
+        document.documentElement.style.setProperty('--text-muted', '#a3a3a3');
+        document.documentElement.style.setProperty('--text-main', '#ffffff');
+    }}
+
+    animateValue(document.getElementById("val-rev"), 0, {int(kpi_rev)}, 1500, '$');
+    animateValue(document.getElementById("val-prof"), 0, {int(kpi_profit)}, 1500, '$');
+    animateValue(document.getElementById("val-unit"), 0, {int(kpi_units)}, 1500, '');
+    animateValue(document.getElementById("val-stock"), 0, {int(inv_stock)}, 1500, '');
+
+</script>
+</body>
+</html>
+"""
+
+components.html(kpi_html, height=130) # Height adjusted for the card row
 
 st.markdown(" ") 
 
@@ -399,13 +529,14 @@ with col_m1:
     loc_sales['Delta'] = (loc_sales['Revenue'] - loc_sales['Revenue_prev']) / loc_sales['Revenue_prev'] * 100
     loc_sales = loc_sales.sort_values('Revenue', ascending=False).head(6) 
     
-    max_rev = loc_sales['Revenue'].max() if len(loc_sales) > 0 else 1
+    # Use Total Revenue for "Share of Sales" calculation
+    total_rev = curr_sales['Revenue'].sum() if len(curr_sales) > 0 else 1
 
     # Render HTML Rows
     # Increased styling for larger appearance
     html_content = ""
     for _, row in loc_sales.iterrows():
-        pct = (row['Revenue'] / max_rev) * 100
+        pct = (row['Revenue'] / total_rev) * 100
         delta_val = row['Delta']
         delta_cls = "badge-pos" if delta_val >= 0 else "badge-neg"
         delta_sign = "+" if delta_val >= 0 else ""
@@ -442,6 +573,7 @@ with col_m2:
         values='Revenue',
         color_discrete_sequence=theme_colors
     )
+    fig_sb.update_traces(textfont=dict(color='white')) # Force white text for readability
     fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)') # Increased height to fill space
     st.plotly_chart(fig_sb, use_container_width=True)
 
