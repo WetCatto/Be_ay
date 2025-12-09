@@ -14,27 +14,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Shadcn UI Inspired CSS (Refined)
+# Shadcn UI Inspired CSS (Refined & Dark Mode Friendly)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
     .stApp {
         font-family: 'Inter', sans-serif;
-        background-color: #f8fafc; /* Slate-50 */
+        /* Adaptive background */
     }
     
     /* Sidebar Styling */
     section[data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #e2e8f0;
+        background-color: var(--secondary-background-color);
+        border-right: 1px solid rgba(128, 128, 128, 0.2);
     }
     
     /* Main Header */
     .main-header {
         font-size: 26px;
         font-weight: 700;
-        color: #0f172a;
+        color: var(--text-color);
         margin-bottom: 24px;
         display: flex;
         align-items: center;
@@ -43,8 +43,8 @@ st.markdown("""
     
     /* Metrics Override */
     div[data-testid="metric-container"] {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
+        background-color: var(--secondary-background-color);
+        border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 0.5rem;
         padding: 20px;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -52,20 +52,21 @@ st.markdown("""
     
     div[data-testid="stMetricLabel"] {
         font-size: 14px; 
-        color: #64748b; 
+        color: var(--text-color);
+        opacity: 0.7;
         font-weight: 500;
     }
     
     div[data-testid="stMetricValue"] {
         font-size: 28px;
         font-weight: 700;
-        color: #0f172a;
+        color: var(--text-color);
     }
 
     /* Custom Tables & Lists */
     .custom-card {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
+        background-color: var(--secondary-background-color);
+        border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 0.5rem;
         padding: 2px; /* minimal padding, internal content handles spacing */
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -77,7 +78,7 @@ st.markdown("""
         align-items: center;
         justify-content: space-between;
         padding: 12px 0;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.1);
     }
     .location-row:last-child {
         border-bottom: none;
@@ -91,7 +92,7 @@ st.markdown("""
     .loc-name {
         font-size: 14px;
         font-weight: 600;
-        color: #334155;
+        color: var(--text-color);
     }
     .badge {
         font-size: 11px;
@@ -99,8 +100,8 @@ st.markdown("""
         border-radius: 999px;
         font-weight: 600;
     }
-    .badge-pos { background-color: #dcfce7; color: #166534; }
-    .badge-neg { background-color: #fee2e2; color: #991b1b; }
+    .badge-pos { background-color: rgba(220, 252, 231, 0.2); color: #22c55e; }
+    .badge-neg { background-color: rgba(254, 226, 226, 0.2); color: #ef4444; }
     
     .progress-container {
         width: 50%;
@@ -111,19 +112,21 @@ st.markdown("""
     .progress-bg {
         flex-grow: 1;
         height: 10px; /* Thicker bar */
-        background-color: #f1f5f9;
+        background-color: rgba(128, 128, 128, 0.15);
         border-radius: 999px;
         overflow: hidden;
     }
     .progress-fill {
         height: 100%;
-        background-color: #0f172a;
+        background-color: var(--text-color);
         border-radius: 999px;
+        opacity: 0.8;
     }
     .val-text {
         font-size: 13px;
         font-weight: 600;
-        color: #64748b;
+        color: var(--text-color);
+        opacity: 0.8;
         min-width: 40px;
         text-align: right;
     }
@@ -132,18 +135,20 @@ st.markdown("""
     .prod-table {
         width: 100%;
         border-collapse: collapse;
+        color: var(--text-color);
     }
     .prod-table th {
         text-align: left;
         font-size: 13px;
-        color: #64748b;
+        color: var(--text-color);
+        opacity: 0.7;
         font-weight: 500;
         padding: 12px 16px;
-        border-bottom: 1px solid #e2e8f0;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.2);
     }
     .prod-table td {
         padding: 16px;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.1);
         vertical-align: middle;
     }
     .prod-table tr:last-child td {
@@ -157,7 +162,7 @@ st.markdown("""
     .prod-icon {
         width: 36px;
         height: 36px;
-        background-color: #f1f5f9;
+        background-color: rgba(128, 128, 128, 0.1);
         border-radius: 6px;
         display: flex;
         align-items: center;
@@ -167,16 +172,13 @@ st.markdown("""
     .prod-name {
         font-size: 14px;
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-color);
     }
     .prod-val {
         font-size: 14px;
         font-weight: 600;
-        color: #334155;
-    }
-    .prod-meta {
-        font-size: 13px;
-        color: #64748b;
+        color: var(--text-color);
+        opacity: 0.9;
     }
 
     /* Clean up gaps */
@@ -341,8 +343,11 @@ with col_l1:
         xaxis_title="Date",
         yaxis_title="Revenue ($)",
         legend=dict(orientation="h", y=1.1, x=1, xanchor='right'),
-        plot_bgcolor='white', paper_bgcolor='white'
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
     )
+    # Adaptive grid color
+    fig_ts.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+    fig_ts.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
     st.plotly_chart(fig_ts, use_container_width=True)
 
 with col_l2:
@@ -371,8 +376,10 @@ with col_l2:
         xaxis_title="Date",
         yaxis_title="Return Rate (%)",
         showlegend=False,
-        plot_bgcolor='white', paper_bgcolor='white'
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
     )
+    fig_rr.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+    fig_rr.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
     st.plotly_chart(fig_rr, use_container_width=True)
 
 
@@ -431,7 +438,7 @@ with col_m2:
         values='Revenue',
         color_discrete_sequence=px.colors.qualitative.Prism
     )
-    fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0)) # Increased height to fill space
+    fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)') # Increased height to fill space
     st.plotly_chart(fig_sb, use_container_width=True)
 
 # ---> BLOCK 4: TOP PRODUCTS DETAILS (Table)
