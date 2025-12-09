@@ -17,10 +17,10 @@ st.set_page_config(
 # Shadcn UI Inspired CSS (Refined & Dark Mode Friendly)
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
     
     .stApp {
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Nunito', sans-serif;
         /* Adaptive background */
     }
     
@@ -356,6 +356,16 @@ kpi_html = f"""
         color: var(--text-muted, #64748b);
         font-weight: 500;
         margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }}
+    .kpi-icon {{
+        width: 18px;
+        height: 18px;
+        stroke: var(--text-muted, #64748b);
+        stroke-width: 2;
+        fill: none;
     }}
     .kpi-value {{
         font-size: 28px;
@@ -378,7 +388,10 @@ kpi_html = f"""
 <div class="kpi-container">
     <!-- Revenue -->
     <div class="kpi-card">
-        <div class="kpi-label">Revenue</div>
+        <div class="kpi-label">
+            <svg class="kpi-icon" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Revenue
+        </div>
         <div class="kpi-value" id="val-rev">0</div>
         <div class="kpi-delta {('delta-pos' if delta_rev >= 0 else 'delta-neg')}">
             {('+' if delta_rev >= 0 else '')}{delta_rev:.1f}%
@@ -386,7 +399,10 @@ kpi_html = f"""
     </div>
     <!-- Profit -->
     <div class="kpi-card">
-        <div class="kpi-label">Profit</div>
+        <div class="kpi-label">
+            <svg class="kpi-icon" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            Profit
+        </div>
         <div class="kpi-value" id="val-prof">0</div>
         <div class="kpi-delta {('delta-pos' if delta_profit >= 0 else 'delta-neg')}">
             {('+' if delta_profit >= 0 else '')}{delta_profit:.1f}%
@@ -394,7 +410,10 @@ kpi_html = f"""
     </div>
     <!-- Units -->
     <div class="kpi-card">
-        <div class="kpi-label">Units Sold</div>
+        <div class="kpi-label">
+            <svg class="kpi-icon" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            Units Sold
+        </div>
         <div class="kpi-value" id="val-unit">0</div>
         <div class="kpi-delta {('delta-pos' if delta_units >= 0 else 'delta-neg')}">
             {('+' if delta_units >= 0 else '')}{delta_units:.1f}%
@@ -402,7 +421,10 @@ kpi_html = f"""
     </div>
     <!-- Stock -->
     <div class="kpi-card">
-        <div class="kpi-label">Stock On Hand</div>
+        <div class="kpi-label">
+            <svg class="kpi-icon" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.9 19.8A2 2 0 0 1 19 21H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path></svg>
+            Stock On Hand
+        </div>
         <div class="kpi-value" id="val-stock">0</div>
         <div class="kpi-delta" style="color: #64748b; font-size: 12px;">Active Stock</div>
     </div>
@@ -573,7 +595,7 @@ with col_m2:
         values='Revenue',
         color_discrete_sequence=theme_colors
     )
-    fig_sb.update_traces(textfont=dict(color='white')) # Force white text for readability
+    # Reverting forced white text to let Plotly auto-contrast handle Light Mode readability
     fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)') # Increased height to fill space
     st.plotly_chart(fig_sb, use_container_width=True)
 
