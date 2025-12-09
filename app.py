@@ -250,8 +250,8 @@ with st.sidebar:
     st.markdown("**Time Period**")
     time_filter = st.radio(
         "Select Range", 
-        ["Last 7 Days", "Last 30 Days", "Year to Date", "Custom"],
-        index=2, # Default to Year to Date
+        ["All Time", "Last 7 Days", "Last 30 Days", "Year to Date", "Custom"],
+        index=3, # Default to Year to Date
         label_visibility="collapsed",
         horizontal=True
     )
@@ -259,7 +259,10 @@ with st.sidebar:
     max_date = df_sales['Date'].max()
     min_date = df_sales['Date'].min()
     
-    if time_filter == "Last 7 Days":
+    if time_filter == "All Time":
+        start_date = min_date
+        end_date = max_date
+    elif time_filter == "Last 7 Days":
         start_date = max_date - timedelta(days=6)
         end_date = max_date
     elif time_filter == "Last 30 Days":
@@ -284,6 +287,17 @@ with st.sidebar:
 
     st.markdown("---")
     st.info(f"Analyzing from **{start_date.date()}** to **{end_date.date()}**")
+    
+    st.markdown(
+        """
+        <div style='margin-top: 32px; text-align: center;'>
+            <a href='https://mavenanalytics.io/data-playground/mexico-toy-sales' target='_blank' style='color: #94a3b8; font-size: 11px; text-decoration: none; font-family: sans-serif;'>
+                Data Source: Maven Analytics
+            </a>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
 
 # Start Filtering
 mask_curr = (df_sales['Date'] >= start_date) & (df_sales['Date'] <= end_date)
@@ -312,7 +326,7 @@ filtered_inv = df_inventory[mask_inv]
 # ==========================================
 # 4. MAIN CONTENT
 # ==========================================
-st.markdown('<div class="main-header">📊 Maven Toys Dashboard</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">📊 Maven Toys KPI</div>', unsafe_allow_html=True)
 
 # ---> BLOCK 1: KPIs (Animated)
 import streamlit.components.v1 as components
@@ -486,8 +500,43 @@ with col_l1:
     ts_data['MA'] = ts_data['Revenue'].rolling(window=3).mean()
     
     fig_ts = go.Figure()
-    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['Revenue'], name='Actual', line=dict(color='#3b82f6', width=2))) # Blue-500 for visibility
-    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['MA'], name='Forecast', line=dict(color='#f97316', dash='dash'))) 
+    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['Revenue'], name='Actual', line=dict(color='#3b82f6', width=2))) # Blue-500
+    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['MA'], name='Trend (MA)', line=dict(color='#f97316', dash='dash'))) # Orange
+    
+    # Advanced ML Forecast
+    from sklearn.ensemble import RandomForestRegressor
+    
+    if len(ts_data) > 4:
+        # 1. Feature Engineering
+        df_ml = ts_data.copy()
+        df_ml['Ordinal'] = df_ml['Date'].apply(lambda x: x.toordinal())
+        df_ml['Month'] = df_ml['Date'].dt.month
+        df_ml['Week'] = df_ml['Date'].dt.isocalendar().week.astype(int)
+        
+        X = df_ml[['Ordinal', 'Month', 'Week']]
+        y = df_ml['Revenue']
+        
+        # 2. Train Model
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(X, y)
+        
+        # 3. Future Dates
+        last_date = ts_data['Date'].max()
+        future_dates = [last_date + timedelta(weeks=i) for i in range(1, 9)]
+        future_df = pd.DataFrame({'Date': future_dates})
+        future_df['Ordinal'] = future_df['Date'].apply(lambda x: x.toordinal())
+        future_df['Month'] = future_df['Date'].dt.month
+        future_df['Week'] = future_df['Date'].dt.isocalendar().week.astype(int)
+        
+        # 4. Predict
+        future_vals = model.predict(future_df[['Ordinal', 'Month', 'Week']])
+        
+        fig_ts.add_trace(go.Scatter(
+            x=future_dates, 
+            y=future_vals, 
+            name='ML Forecast (Random Forest)', 
+            line=dict(color='#8b5cf6', dash='dot', width=2) # Violet
+        ))
     
     fig_ts.update_layout(
         height=350,
@@ -595,18 +644,26 @@ with col_m2:
         values='Revenue',
         color_discrete_sequence=theme_colors
     )
-    # Reverting forced white text to let Plotly auto-contrast handle Light Mode readability
+    fig_sb.update_traces(textfont=dict(color='white')) # Force white text for readability against dark slices
     fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)') # Increased height to fill space
     st.plotly_chart(fig_sb, use_container_width=True)
 
-# ---> BLOCK 4: TOP PRODUCTS DETAILS (Table)
-st.markdown("### Best Selling Products")
+# ---> BLOCK 4: PRODUCT PERFORMANCE (Table)
+col_p1, col_p2 = st.columns([3, 1])
+with col_p1:
+    st.markdown("### Product Performance")
+with col_p2:
+    show_mode = st.selectbox("Show", ["Top Sellers", "Lowest Performing"], label_visibility="collapsed")
 
 prod_perf = curr_sales.groupby(['Product_Name', 'Product_Category']).agg({
     'Revenue': 'sum',
     'Units': 'sum'
 }).reset_index()
-prod_perf = prod_perf.sort_values('Revenue', ascending=False).head(8)
+
+if show_mode == "Top Sellers":
+    prod_perf = prod_perf.sort_values('Revenue', ascending=False).head(8)
+else:
+    prod_perf = prod_perf[prod_perf['Revenue'] > 0].sort_values('Revenue', ascending=True).head(8)
 
 def get_icon(cat):
     if 'Electronics' in cat: return '💻'
@@ -617,7 +674,7 @@ def get_icon(cat):
 
 # Generate HTML Table
 # Headers matching the data types in user's snippet (Price, Sold count)
-table_html = '<table class="prod-table"><thead><tr><th>Product</th><th>Price</th><th>Sold</th></tr></thead><tbody>'
+table_html = '<table class="prod-table"><thead><tr><th>Product</th><th>Price</th><th>Sold</th><th>Revenue</th></tr></thead><tbody>'
 
 for _, row in prod_perf.iterrows():
     icon = get_icon(row['Product_Category'])
@@ -632,6 +689,7 @@ for _, row in prod_perf.iterrows():
 </div></td>
 <td><span class="prod-val">${price_val:,.2f}</span></td>
 <td><span class="prod-val">{row['Units']:,.0f}</span></td>
+<td><span class="prod-val">${row['Revenue']:,.0f}</span></td>
 </tr>"""
 
 table_html += "</tbody></table>"
