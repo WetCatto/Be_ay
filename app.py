@@ -17,10 +17,10 @@ st.set_page_config(
 # Shadcn UI Inspired CSS (Refined & Dark Mode Friendly)
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    .stApp {
-        font-family: 'Nunito', sans-serif;
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
         /* Adaptive background */
     }
     
@@ -244,7 +244,7 @@ df_sales, df_inventory = load_and_prep_data()
 # 3. SIDEBAR & FILTERS
 # ==========================================
 with st.sidebar:
-    st.markdown("### 🛠️ Controls")
+    st.markdown("### Controls")
     
     # 1. Quick Filters
     st.markdown("**Time Period**")
@@ -286,7 +286,6 @@ with st.sidebar:
     stores = st.multiselect("Stores", df_sales['Store_Name'].unique())
 
     st.markdown("---")
-    st.info(f"Analyzing from **{start_date.date()}** to **{end_date.date()}**")
     
     st.markdown(
         """
@@ -326,7 +325,7 @@ filtered_inv = df_inventory[mask_inv]
 # ==========================================
 # 4. MAIN CONTENT
 # ==========================================
-st.markdown('<div class="main-header">📊 Maven Toys KPI</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Maven Toys KPI</div>', unsafe_allow_html=True)
 
 # ---> BLOCK 1: KPIs (Animated)
 import streamlit.components.v1 as components
@@ -496,19 +495,30 @@ col_l1, col_l2 = st.columns(2)
 
 with col_l1:
     st.markdown("### Revenue Trend")
+    # Base Data (Respects Time Filter)
     ts_data = curr_sales.set_index('Date').resample('W')['Revenue'].sum().reset_index()
     ts_data['MA'] = ts_data['Revenue'].rolling(window=3).mean()
     
+    # Forecast Data (Respects Cat/Loc filters, but uses ALL Time history for better ML)
+    mask_ml = (df_sales['Date'] >= df_sales['Date'].min()) # All time
+    if cities: mask_ml &= df_sales['Store_City'].isin(cities)
+    if categories: mask_ml &= df_sales['Product_Category'].isin(categories)
+    if stores: mask_ml &= df_sales['Store_Name'].isin(stores)
+    
+    df_full_history = df_sales[mask_ml].set_index('Date').resample('W')['Revenue'].sum().reset_index()
+    
     fig_ts = go.Figure()
-    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['Revenue'], name='Actual', line=dict(color='#3b82f6', width=2))) # Blue-500
-    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['MA'], name='Trend (MA)', line=dict(color='#f97316', dash='dash'))) # Orange
+    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['Revenue'], name='Actual', line=dict(color='#3b82f6', width=2))) 
+    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['MA'], name='Trend', line=dict(color='#f97316', dash='dash'))) 
     
-    # Advanced ML Forecast
+    # Advanced ML Forecast (Hybrid: Trend + Seasonality)
+    # Only show forecast if we are looking at the latest data (not historical analysis)
     from sklearn.ensemble import RandomForestRegressor
+    from sklearn.linear_model import LinearRegression
     
-    if len(ts_data) > 4:
-        # 1. Feature Engineering
-        df_ml = ts_data.copy()
+    if len(df_full_history) > 12 and end_date >= max_date: # Ensure enough history AND we are at the end
+        # 1. Feature Engineering on FULL HISTORY
+        df_ml = df_full_history.copy()
         df_ml['Ordinal'] = df_ml['Date'].apply(lambda x: x.toordinal())
         df_ml['Month'] = df_ml['Date'].dt.month
         df_ml['Week'] = df_ml['Date'].dt.isocalendar().week.astype(int)
@@ -516,26 +526,35 @@ with col_l1:
         X = df_ml[['Ordinal', 'Month', 'Week']]
         y = df_ml['Revenue']
         
-        # 2. Train Model
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X, y)
+        # 2. Hybrid Model Training
+        # Part A: Linear Trend (Extrapolation)
+        m_trend = LinearRegression()
+        m_trend.fit(df_ml[['Ordinal']], y)
+        df_ml['Trend'] = m_trend.predict(df_ml[['Ordinal']])
+        df_ml['Residuals'] = y - df_ml['Trend']
         
-        # 3. Future Dates
-        last_date = ts_data['Date'].max()
-        future_dates = [last_date + timedelta(weeks=i) for i in range(1, 9)]
+        # Part B: Random Forest (Seasonality on Residuals)
+        m_season = RandomForestRegressor(n_estimators=100, random_state=42)
+        m_season.fit(df_ml[['Month', 'Week']], df_ml['Residuals'])
+        
+        # 3. Future Prediction
+        last_date = df_ml['Date'].max()
+        future_dates = [last_date + timedelta(weeks=i) for i in range(1, 13)] 
         future_df = pd.DataFrame({'Date': future_dates})
         future_df['Ordinal'] = future_df['Date'].apply(lambda x: x.toordinal())
         future_df['Month'] = future_df['Date'].dt.month
         future_df['Week'] = future_df['Date'].dt.isocalendar().week.astype(int)
         
-        # 4. Predict
-        future_vals = model.predict(future_df[['Ordinal', 'Month', 'Week']])
+        # Predict Components
+        future_trend = m_trend.predict(future_df[['Ordinal']])
+        future_season = m_season.predict(future_df[['Month', 'Week']])
+        future_vals = future_trend + future_season
         
         fig_ts.add_trace(go.Scatter(
             x=future_dates, 
             y=future_vals, 
-            name='ML Forecast (Random Forest)', 
-            line=dict(color='#8b5cf6', dash='dot', width=2) # Violet
+            name='Forecast', # Concise Name
+            line=dict(color='#8b5cf6', dash='dot', width=2) 
         ))
     
     fig_ts.update_layout(
@@ -550,14 +569,18 @@ with col_l1:
     # Adaptive grid color
     fig_ts.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
     fig_ts.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-    st.plotly_chart(fig_ts, use_container_width=True)
+    st.plotly_chart(fig_ts, width="stretch")
 
 with col_l2:
     st.markdown("### Return Rate Trend")
     # Simulate Return Rate
     rr_data = curr_sales.set_index('Date').resample('W')['Units'].sum().reset_index()
     np.random.seed(42)
-    rr_data['Return_Rate'] = 2.5 + np.random.normal(0, 0.5, len(rr_data)) # Simulated
+    # Generate smoothed noise
+    noise = np.random.normal(0, 0.3, len(rr_data)) # Reduced noise std dev
+    rr_data['Return_Rate'] = 2.5 + noise
+    # Apply rolling smoothing
+    rr_data['Return_Rate'] = rr_data['Return_Rate'].rolling(window=4, min_periods=1).mean()
     rr_data['Return_Rate'] = rr_data['Return_Rate'].clip(0, 5) 
     
     fig_rr = go.Figure()
@@ -582,7 +605,7 @@ with col_l2:
     )
     fig_rr.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
     fig_rr.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-    st.plotly_chart(fig_rr, use_container_width=True)
+    st.plotly_chart(fig_rr, width="stretch")
 
 
 # ---> BLOCK 3: SALES BY LOCATION & PRODUCT MIX
@@ -597,7 +620,8 @@ with col_m1:
     loc_prev = prev_sales.groupby('Store_City').agg({'Revenue':'sum'}).reset_index()
     loc_sales = loc_sales.merge(loc_prev, on='Store_City', how='left', suffixes=('', '_prev')).fillna(0)
     
-    loc_sales['Delta'] = (loc_sales['Revenue'] - loc_sales['Revenue_prev']) / loc_sales['Revenue_prev'] * 100
+    # Fix division by zero
+    loc_sales['Delta'] = loc_sales.apply(lambda row: (row['Revenue'] - row['Revenue_prev']) / row['Revenue_prev'] * 100 if row['Revenue_prev'] > 0 else 0.0, axis=1)
     loc_sales = loc_sales.sort_values('Revenue', ascending=False).head(6) 
     
     # Use Total Revenue for "Share of Sales" calculation
@@ -633,7 +657,7 @@ with col_m2:
     # Sunburst
     top_cats = curr_sales.groupby('Product_Category')['Revenue'].sum().nlargest(5).index
     sunburst_data = curr_sales[curr_sales['Product_Category'].isin(top_cats)].groupby(['Product_Category', 'Product_Name'])['Revenue'].sum().reset_index()
-    sunburst_data = sunburst_data.groupby('Product_Category').apply(lambda x: x.nlargest(3, 'Revenue')).reset_index(drop=True)
+    sunburst_data = sunburst_data.groupby('Product_Category').apply(lambda x: x.nlargest(3, 'Revenue'), include_groups=False).reset_index()
     
     # Custom Theme Colors (Blue, Orange, Emerald, Violet, Cyan)
     theme_colors = ['#3b82f6', '#f97316', '#10b981', '#8b5cf6', '#06b6d4', '#ec4899']
@@ -646,7 +670,7 @@ with col_m2:
     )
     fig_sb.update_traces(textfont=dict(color='white')) # Force white text for readability against dark slices
     fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)') # Increased height to fill space
-    st.plotly_chart(fig_sb, use_container_width=True)
+    st.plotly_chart(fig_sb, width="stretch")
 
 # ---> BLOCK 4: PRODUCT PERFORMANCE (Table)
 col_p1, col_p2 = st.columns([3, 1])
@@ -665,19 +689,24 @@ if show_mode == "Top Sellers":
 else:
     prod_perf = prod_perf[prod_perf['Revenue'] > 0].sort_values('Revenue', ascending=True).head(8)
 
-def get_icon(cat):
-    if 'Electronics' in cat: return '💻'
-    if 'Clothing' in cat: return '👕'
-    if 'Home' in cat: return '🏠'
-    if 'Toy' in cat: return '🧸'
-    return '📦'
+def get_icon_svg(cat):
+    # Lucide-style SVGs
+    if 'Electronics' in cat: 
+        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>'
+    if 'Clothing' in cat:
+        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M20.38 3.4a1.6 1.6 0 0 0-1.6-1A2.4 2.4 0 0 0 14 6h-4a2.4 2.4 0 0 0-4.8-1.6 1.6 1.6 0 0 0-1.6 1L3 18l4 2 5-6 5 6 4-2z"></path></svg>'
+    if 'Home' in cat:
+        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>'
+    if 'Toy' in cat:
+        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M4.5 3h15"/><path d="M4.5 3v18"/><path d="M19.5 3v18"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>' # Using a generic box/block icon for toys as teddy bear svgs are complex
+    return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>'
 
 # Generate HTML Table
 # Headers matching the data types in user's snippet (Price, Sold count)
 table_html = '<table class="prod-table"><thead><tr><th>Product</th><th>Price</th><th>Sold</th><th>Revenue</th></tr></thead><tbody>'
 
 for _, row in prod_perf.iterrows():
-    icon = get_icon(row['Product_Category'])
+    icon = get_icon_svg(row['Product_Category'])
     # Calc average price for the Price column
     price_val = row['Revenue'] / row['Units'] if row['Units'] > 0 else 0
     
