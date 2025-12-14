@@ -204,6 +204,81 @@ st.markdown("""
         padding-top: 3.5rem; /* Increased to avoid cutoff */
         padding-bottom: 2rem;
     }
+
+    /* Low Stock Cards */
+    .low-stock-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+    }
+    .low-stock-card {
+        background-color: var(--secondary-background-color);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-left: 4px solid #ef4444;
+        border-radius: 0.5rem;
+        padding: 16px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+    .low-stock-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    .low-stock-product {
+        flex: 1;
+    }
+    .low-stock-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 4px;
+        line-height: 1.3;
+    }
+    .low-stock-category {
+        font-size: 12px;
+        color: var(--text-color);
+        opacity: 0.6;
+    }
+    .low-stock-badge {
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .badge-critical { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .badge-warning { background-color: rgba(251, 146, 60, 0.15); color: #fb923c; }
+    .low-stock-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(128, 128, 128, 0.1);
+    }
+    .stock-count {
+        font-size: 24px;
+        font-weight: 700;
+        color: #ef4444;
+    }
+    .stock-label {
+        font-size: 11px;
+        color: var(--text-color);
+        opacity: 0.6;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .stores-affected {
+        text-align: right;
+    }
+    .stores-count {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-color);
+    }
 """, unsafe_allow_html=True)
 
 # ==========================================
@@ -724,3 +799,92 @@ for _, row in prod_perf.iterrows():
 table_html += "</tbody></table>"
 
 st.markdown(table_html, unsafe_allow_html=True)
+
+# ----> BLOCK 5: LOW STOCK INDICATORS
+st.markdown(" ")
+
+# Header with view mode selector
+col_header, col_filter = st.columns([3, 1])
+with col_header:
+    st.markdown("### Low Stock Indicators")
+with col_filter:
+    view_mode = st.selectbox(
+        "View Mode",
+        ["Aggregated View", "Store View"],
+        label_visibility="collapsed",
+        key="low_stock_view_mode"
+    )
+
+# Define low stock threshold
+LOW_STOCK_THRESHOLD = 10
+
+# Calculate low stock products based on view mode
+if view_mode == "Aggregated View":
+    # Aggregated: Group by product and sum stock across all stores
+    low_stock_raw = filtered_inv[filtered_inv['Stock_On_Hand'] <= LOW_STOCK_THRESHOLD].copy()
+    low_stock = low_stock_raw.groupby(['Product_Name', 'Product_Category']).agg({
+        'Stock_On_Hand': 'sum',
+        'Store_Name': 'count'  # Count stores affected
+    }).reset_index()
+    low_stock.rename(columns={'Store_Name': 'Stores_Affected'}, inplace=True)
+    low_stock = low_stock.sort_values('Stock_On_Hand', ascending=True).head(15)
+else:
+    # Store-Specific: Show individual store locations
+    low_stock = filtered_inv[filtered_inv['Stock_On_Hand'] <= LOW_STOCK_THRESHOLD].copy()
+    low_stock = low_stock[['Product_Name', 'Product_Category', 'Store_Name', 'Store_City', 'Stock_On_Hand']].copy()
+    low_stock = low_stock.sort_values('Stock_On_Hand', ascending=True).head(15)
+
+
+
+if len(low_stock) > 0:
+    # Create a grid layout for low stock items
+    low_stock_html = '<div class="low-stock-grid">'
+    
+    for _, row in low_stock.iterrows():
+        stock_level = row['Stock_On_Hand']
+        # Determine severity
+        if stock_level == 0:
+            badge_text = "OUT OF STOCK"
+            badge_class = "badge-critical"
+        elif stock_level <= 5:
+            badge_text = "CRITICAL"
+            badge_class = "badge-critical"
+        else:
+            badge_text = "LOW"
+            badge_class = "badge-warning"
+        
+        # Determine what to show in the bottom right based on view mode
+        if view_mode == "Aggregated View":
+            bottom_right_main = str(int(row['Stores_Affected']))
+            bottom_right_label = f"Store{'s' if row['Stores_Affected'] > 1 else ''}"
+        else:
+            bottom_right_main = row['Store_Name']
+            bottom_right_label = row['Store_City']
+        
+        low_stock_html += f"""<div class="low-stock-card">
+<div class="low-stock-header">
+<div class="low-stock-product">
+<div class="low-stock-name">{row['Product_Name']}</div>
+<div class="low-stock-category">{row['Product_Category']}</div>
+</div>
+<span class="low-stock-badge {badge_class}">{badge_text}</span>
+</div>
+<div class="low-stock-details">
+<div>
+<div class="stock-count">{int(stock_level)}</div>
+<div class="stock-label">Units Left</div>
+</div>
+<div class="stores-affected">
+<div class="stores-count">{bottom_right_main}</div>
+<div class="stock-label">{bottom_right_label}</div>
+</div>
+</div>
+</div>"""
+    
+    
+    
+    
+    low_stock_html += "</div>"
+    st.markdown(low_stock_html, unsafe_allow_html=True)
+else:
+    st.info("✅ All products are adequately stocked!")
