@@ -1034,84 +1034,188 @@ with selected_tab[1]:
 
 # ---> TAB 3: ABOUT
 with selected_tab[2]:
-    st.markdown("""
-    <div style='text-align: center; padding: 40px 20px 20px 20px;'>
-        <h1 style='font-size: 28px; font-weight: 700; margin: 0 0 8px 0; color: var(--text-color);'>Maven Toys Dashboard</h1>
-        <p style='font-size: 14px; color: #94a3b8; max-width: 600px; margin: 0 auto;'>
-            Interactive sales analytics dashboard for Maven Toys - a fictional toy store chain operating across Mexico.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Dataset Stats
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Transactions", f"{len(df_sales):,}")
-    with col2:
-        st.metric("Stores", df_sales['Store_Name'].nunique())
-    with col3:
-        st.metric("Cities", df_sales['Store_City'].nunique())
-    with col4:
-        st.metric("Period", f"{df_sales['Date'].min().year}-{df_sales['Date'].max().year}")
-    
-    st.markdown("---")
-    
-    # Key Insights Section
-    st.markdown('<h3 style="display: flex; align-items: center; gap: 8px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Key Insights from Analysis</h3>', unsafe_allow_html=True)
-    
-    # Calculate insights dynamically
+    # Calculate dynamic stats
+    total_transactions = len(df_sales)
+    total_stores = df_sales['Store_Name'].nunique()
+    total_cities = df_sales['Store_City'].nunique()
+    total_products = df_sales['Product_Name'].nunique()
+    total_categories = df_sales['Product_Category'].nunique()
+    year_range = f"{df_sales['Date'].min().year}-{df_sales['Date'].max().year}"
     total_revenue = df_sales['Revenue'].sum()
     total_profit = df_sales['Profit'].sum()
     profit_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
+    
+    # Calculate insights
     top_city = df_sales.groupby('Store_City')['Revenue'].sum().idxmax()
+    top_city_rev = df_sales.groupby('Store_City')['Revenue'].sum().max()
     top_category = df_sales.groupby('Product_Category')['Revenue'].sum().idxmax()
+    top_category_rev = df_sales.groupby('Product_Category')['Revenue'].sum().max()
     top_product = df_sales.groupby('Product_Name')['Profit'].sum().idxmax()
-    avg_transaction = total_revenue / len(df_sales) if len(df_sales) > 0 else 0
-    
-    col_ins1, col_ins2 = st.columns(2)
-    
-    with col_ins1:
-        st.markdown('<p style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> <strong>Revenue Performance</strong></p>', unsafe_allow_html=True)
-        st.markdown(f"""
-- Total Revenue: **${total_revenue:,.0f}**
-- Total Profit: **${total_profit:,.0f}**
-- Overall Profit Margin: **{profit_margin:.1f}%**
-- Avg Transaction Value: **${avg_transaction:.2f}**
-        """)
-        
-    with col_ins2:
-        st.markdown('<p style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 22V8.3c0-.93 0-1.4.2-1.7a1.5 1.5 0 0 1 .6-.6C11.1 6 11.6 6 12.6 6h.8c1 0 1.5 0 1.8.2.3.1.5.3.6.6.2.3.2.77.2 1.7V22"/></svg> <strong>Top Performers</strong></p>', unsafe_allow_html=True)
-        st.markdown(f"""
-- Best City: **{top_city}**
-- Top Category: **{top_category}**
-- Most Profitable Product: **{top_product}**
-- Total Products: **{df_sales['Product_Name'].nunique()}**
-        """)
-    
-    st.markdown("---")
-    
-    # Dataset Features
-    st.markdown('<h3 style="display: flex; align-items: center; gap: 8px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Dataset Features</h3>', unsafe_allow_html=True)
+    top_product_profit = df_sales.groupby('Product_Name')['Profit'].sum().max()
+    avg_transaction = total_revenue / total_transactions if total_transactions > 0 else 0
+
+    # Gradient Header
     st.markdown("""
-- **5 Product Categories:** Toys, Art & Crafts, Games, Electronics, Sports & Outdoors
-- **4 Store Location Types:** Airport, Downtown, Commercial, Residential
-- **29 Cities across Mexico** with varying market characteristics
-- **Inventory data** for stock level monitoring and low-stock alerts
-    """)
+    <div style="text-align: center; padding: 32px 20px 36px 20px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); border-radius: 12px; margin-bottom: 24px;">
+        <h1 style="margin: 0 0 8px 0; font-weight: 700; font-size: 32px; background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Maven Toys Dashboard</h1>
+        <p style="color: #94a3b8; margin: 0; font-size: 15px;">Interactive Sales Analytics for Mexico's Leading Toy Retailer</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    # Key Stats Grid (6 cards)
+    st.markdown(f"""
+    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px;">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 10px; padding: 20px; text-align: center;">
+            <div style="font-size: 26px; font-weight: 700; color: white;">{total_transactions:,}</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Transactions</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); border-radius: 10px; padding: 20px; text-align: center;">
+            <div style="font-size: 26px; font-weight: 700; color: white;">{total_stores}</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Stores</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 10px; padding: 20px; text-align: center;">
+            <div style="font-size: 26px; font-weight: 700; color: white;">{total_cities}</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Cities</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #dc2626 0%, #f43f5e 100%); border-radius: 10px; padding: 20px; text-align: center;">
+            <div style="font-size: 26px; font-weight: 700; color: white;">{total_products}</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Products</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); border-radius: 10px; padding: 20px; text-align: center;">
+            <div style="font-size: 26px; font-weight: 700; color: white;">{total_categories}</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Categories</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); border-radius: 10px; padding: 20px; text-align: center;">
+            <div style="font-size: 26px; font-weight: 700; color: white;">{year_range}</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Period</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Technology & Source
-    col_tech1, col_tech2 = st.columns(2)
-    with col_tech1:
-        st.markdown('<p style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg> <strong>Built With</strong></p>', unsafe_allow_html=True)
-        st.markdown("""
-- Streamlit (Web Framework)
-- Plotly (Interactive Charts)
-- Pandas (Data Processing)
-        """)
-    with col_tech2:
-        st.markdown('<p style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> <strong>Data Source</strong></p>', unsafe_allow_html=True)
-        st.markdown("""
-- [Maven Analytics](https://mavenanalytics.io/data-playground/mexico-toy-sales)
-        """)
+    # About the Data Section
+    st.markdown("""
+    <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; margin-bottom: 24px;">
+        <div style="font-weight: 600; font-size: 18px; color: #f8fafc; margin-bottom: 16px;">📦 About the Dataset</div>
+        <p style="font-size: 14px; color: #cbd5e1; line-height: 1.7; margin: 0 0 16px 0;">
+            This dashboard analyzes sales data from <strong style="color: #3b82f6;">Maven Toys</strong>, a fictional toy store chain operating across Mexico. 
+            The dataset spans from January 2022 to September 2023, capturing detailed transaction-level data including product information, 
+            store locations, pricing, and inventory levels.
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+            <div style="background: rgba(59, 130, 246, 0.1); border-radius: 8px; padding: 16px;">
+                <div style="font-weight: 600; color: #3b82f6; font-size: 13px; margin-bottom: 8px;">🏪 Store Types</div>
+                <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+                    4 location types: <strong style="color: #f8fafc;">Airport, Downtown, Commercial, Residential</strong>.
+                </div>
+            </div>
+            <div style="background: rgba(168, 85, 247, 0.1); border-radius: 8px; padding: 16px;">
+                <div style="font-weight: 600; color: #a855f7; font-size: 13px; margin-bottom: 8px;">🎮 Product Categories</div>
+                <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+                    5 categories: <strong style="color: #f8fafc;">Toys, Art & Crafts, Games, Electronics, Sports & Outdoors</strong>.
+                </div>
+            </div>
+            <div style="background: rgba(34, 197, 94, 0.1); border-radius: 8px; padding: 16px;">
+                <div style="font-weight: 600; color: #22c55e; font-size: 13px; margin-bottom: 8px;">📊 Data Coverage</div>
+                <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+                    Includes <strong style="color: #f8fafc;">sales transactions, product costs, inventory levels</strong>, and store metadata.
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Two Column Layout: Financial Highlights + Key Insights
+    st.markdown(f"""
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+        <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 24px;">
+            <div style="font-weight: 600; font-size: 16px; color: #f8fafc; margin-bottom: 16px;">💰 Financial Performance</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="background: rgba(34, 197, 94, 0.1); border-radius: 8px; padding: 14px;">
+                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Total Revenue</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #22c55e;">${total_revenue:,.0f}</div>
+                </div>
+                <div style="background: rgba(59, 130, 246, 0.1); border-radius: 8px; padding: 14px;">
+                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Total Profit</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${total_profit:,.0f}</div>
+                </div>
+                <div style="background: rgba(168, 85, 247, 0.1); border-radius: 8px; padding: 14px;">
+                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Profit Margin</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #a855f7;">{profit_margin:.1f}%</div>
+                </div>
+                <div style="background: rgba(249, 115, 22, 0.1); border-radius: 8px; padding: 14px;">
+                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Avg per Sale</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #f97316;">${avg_transaction:.2f}</div>
+                </div>
+            </div>
+        </div>
+        <div style="background: linear-gradient(135deg, #1e3a5f 0%, #1e3a8a 100%); border-radius: 10px; padding: 24px;">
+            <div style="font-weight: 600; font-size: 16px; color: #f8fafc; margin-bottom: 16px;">💡 Key Insights Discovered</div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <div style="min-width: 24px; height: 24px; background: rgba(34, 197, 94, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">🏆</div>
+                    <div style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5;">
+                        <strong style="color: #22c55e;">{top_city}</strong> leads in revenue with <strong>${top_city_rev:,.0f}</strong> in total sales
+                    </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <div style="min-width: 24px; height: 24px; background: rgba(59, 130, 246, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">📈</div>
+                    <div style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5;">
+                        <strong style="color: #3b82f6;">{top_category}</strong> is the top-performing category with ${top_category_rev:,.0f} revenue
+                    </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <div style="min-width: 24px; height: 24px; background: rgba(168, 85, 247, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">⭐</div>
+                    <div style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5;">
+                        <strong style="color: #a855f7;">{top_product}</strong> generates highest profit at ${top_product_profit:,.0f}
+                    </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <div style="min-width: 24px; height: 24px; background: rgba(249, 115, 22, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">📊</div>
+                    <div style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5;">
+                        Downtown stores show <strong style="color: #f97316;">higher volume</strong> while Airport stores have <strong style="color: #f97316;">higher margins</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Dataset Source Card
+    st.markdown("""
+    <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 20px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 15px; color: #f8fafc;">Maven Analytics Data Playground</div>
+                    <div style="font-size: 12px; color: #64748b;">Mexico Toy Sales Dataset</div>
+                </div>
+            </div>
+            <a href="https://mavenanalytics.io/data-playground/mexico-toy-sales" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 13px;">View Original Dataset →</a>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Tech Stack Footer
+    st.markdown("""
+    <div style="background: linear-gradient(90deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); border: 1px solid #1e293b; border-radius: 10px; padding: 20px;">
+        <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 24px; text-align: center;">
+            <div>
+                <div style="font-weight: 600; color: #3b82f6; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Frontend</div>
+                <div style="color: #f8fafc; font-size: 14px; font-weight: 500;">Streamlit • Plotly</div>
+            </div>
+            <div style="width: 1px; height: 30px; background: #334155;"></div>
+            <div>
+                <div style="font-weight: 600; color: #22c55e; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Data Processing</div>
+                <div style="color: #f8fafc; font-size: 14px; font-weight: 500;">Pandas • NumPy</div>
+            </div>
+            <div style="width: 1px; height: 30px; background: #334155;"></div>
+            <div>
+                <div style="font-weight: 600; color: #a855f7; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Machine Learning</div>
+                <div style="color: #f8fafc; font-size: 14px; font-weight: 500;">Scikit-learn • Random Forest</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
