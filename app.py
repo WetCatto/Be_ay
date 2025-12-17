@@ -755,14 +755,14 @@ with col_p2:
     show_mode = st.selectbox("Show", ["Top Sellers", "Lowest Performing"], label_visibility="collapsed")
 
 prod_perf = curr_sales.groupby(['Product_Name', 'Product_Category']).agg({
-    'Revenue': 'sum',
+    'Profit': 'sum',
     'Units': 'sum'
 }).reset_index()
 
 if show_mode == "Top Sellers":
-    prod_perf = prod_perf.sort_values('Revenue', ascending=False).head(8)
+    prod_perf = prod_perf.sort_values('Profit', ascending=False).head(8)
 else:
-    prod_perf = prod_perf[prod_perf['Revenue'] > 0].sort_values('Revenue', ascending=True).head(8)
+    prod_perf = prod_perf[prod_perf['Profit'] > 0].sort_values('Profit', ascending=True).head(8)
 
 def get_icon_svg(cat):
     # Lucide-style SVGs
@@ -778,12 +778,13 @@ def get_icon_svg(cat):
 
 # Generate HTML Table
 # Headers matching the data types in user's snippet (Price, Sold count)
-table_html = '<table class="prod-table"><thead><tr><th>Product</th><th>Price</th><th>Sold</th><th>Revenue</th></tr></thead><tbody>'
+table_html = '<table class="prod-table"><thead><tr><th>Product</th><th>Price</th><th>Sold</th><th>Profit</th></tr></thead><tbody>'
 
 for _, row in prod_perf.iterrows():
     icon = get_icon_svg(row['Product_Category'])
     # Calc average price for the Price column
-    price_val = row['Revenue'] / row['Units'] if row['Units'] > 0 else 0
+    # Since we're grouping by product, we need to get the price from the original data
+    product_price = curr_sales[curr_sales['Product_Name'] == row['Product_Name']]['Product_Price'].iloc[0] if len(curr_sales[curr_sales['Product_Name'] == row['Product_Name']]) > 0 else 0
     
     # IMPORTANT: No indentation in HTML string to prevent markdown code block rendering
     table_html += f"""<tr>
@@ -791,9 +792,9 @@ for _, row in prod_perf.iterrows():
 <div class="prod-icon">{icon}</div>
 <span class="prod-name">{row['Product_Name']}</span>
 </div></td>
-<td><span class="prod-val">${price_val:,.2f}</span></td>
+<td><span class="prod-val">${product_price:,.2f}</span></td>
 <td><span class="prod-val">{row['Units']:,.0f}</span></td>
-<td><span class="prod-val">${row['Revenue']:,.0f}</span></td>
+<td><span class="prod-val">${row['Profit']:,.0f}</span></td>
 </tr>"""
 
 table_html += "</tbody></table>"
