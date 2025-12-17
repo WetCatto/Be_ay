@@ -1062,32 +1062,32 @@ with selected_tab[2]:
     </div>
     """, unsafe_allow_html=True)
     
-    # Key Stats Grid (6 cards)
+    # Key Stats Grid (6 cards) - Muted monochromatic design
     st.markdown(f"""
     <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px;">
-        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 10px; padding: 20px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border: 1px solid #475569; border-radius: 10px; padding: 20px; text-align: center;">
             <div style="font-size: 26px; font-weight: 700; color: white;">{total_transactions:,}</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Transactions</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px;">Transactions</div>
         </div>
-        <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); border-radius: 10px; padding: 20px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border: 1px solid #475569; border-radius: 10px; padding: 20px; text-align: center;">
             <div style="font-size: 26px; font-weight: 700; color: white;">{total_stores}</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Stores</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px;">Stores</div>
         </div>
-        <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 10px; padding: 20px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border: 1px solid #475569; border-radius: 10px; padding: 20px; text-align: center;">
             <div style="font-size: 26px; font-weight: 700; color: white;">{total_cities}</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Cities</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px;">Cities</div>
         </div>
-        <div style="background: linear-gradient(135deg, #dc2626 0%, #f43f5e 100%); border-radius: 10px; padding: 20px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border: 1px solid #475569; border-radius: 10px; padding: 20px; text-align: center;">
             <div style="font-size: 26px; font-weight: 700; color: white;">{total_products}</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Products</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px;">Products</div>
         </div>
-        <div style="background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); border-radius: 10px; padding: 20px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border: 1px solid #475569; border-radius: 10px; padding: 20px; text-align: center;">
             <div style="font-size: 26px; font-weight: 700; color: white;">{total_categories}</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Categories</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px;">Categories</div>
         </div>
-        <div style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); border-radius: 10px; padding: 20px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border: 1px solid #475569; border-radius: 10px; padding: 20px; text-align: center;">
             <div style="font-size: 26px; font-weight: 700; color: white;">{year_range}</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px;">Period</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px;">Period</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1097,25 +1097,25 @@ with selected_tab[2]:
     <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; margin-bottom: 24px;">
         <div style="font-weight: 600; font-size: 18px; color: #f8fafc; margin-bottom: 16px;">📦 About the Dataset</div>
         <p style="font-size: 14px; color: #cbd5e1; line-height: 1.7; margin: 0 0 16px 0;">
-            This dashboard analyzes sales data from <strong style="color: #3b82f6;">Maven Toys</strong>, a fictional toy store chain operating across Mexico. 
+            This dashboard analyzes sales data from <strong style="color: #f8fafc;">Maven Toys</strong>, a fictional toy store chain operating across Mexico. 
             The dataset spans from January 2022 to September 2023, capturing detailed transaction-level data including product information, 
             store locations, pricing, and inventory levels.
         </p>
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-            <div style="background: rgba(59, 130, 246, 0.1); border-radius: 8px; padding: 16px;">
-                <div style="font-weight: 600; color: #3b82f6; font-size: 13px; margin-bottom: 8px;">🏪 Store Types</div>
+            <div style="background: rgba(100, 116, 139, 0.15); border-radius: 8px; padding: 16px;">
+                <div style="font-weight: 600; color: #cbd5e1; font-size: 13px; margin-bottom: 8px;">🏪 Store Types</div>
                 <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
                     4 location types: <strong style="color: #f8fafc;">Airport, Downtown, Commercial, Residential</strong>.
                 </div>
             </div>
-            <div style="background: rgba(168, 85, 247, 0.1); border-radius: 8px; padding: 16px;">
-                <div style="font-weight: 600; color: #a855f7; font-size: 13px; margin-bottom: 8px;">🎮 Product Categories</div>
+            <div style="background: rgba(100, 116, 139, 0.15); border-radius: 8px; padding: 16px;">
+                <div style="font-weight: 600; color: #cbd5e1; font-size: 13px; margin-bottom: 8px;">🎮 Product Categories</div>
                 <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
                     5 categories: <strong style="color: #f8fafc;">Toys, Art & Crafts, Games, Electronics, Sports & Outdoors</strong>.
                 </div>
             </div>
-            <div style="background: rgba(34, 197, 94, 0.1); border-radius: 8px; padding: 16px;">
-                <div style="font-weight: 600; color: #22c55e; font-size: 13px; margin-bottom: 8px;">📊 Data Coverage</div>
+            <div style="background: rgba(100, 116, 139, 0.15); border-radius: 8px; padding: 16px;">
+                <div style="font-weight: 600; color: #cbd5e1; font-size: 13px; margin-bottom: 8px;">📊 Data Coverage</div>
                 <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
                     Includes <strong style="color: #f8fafc;">sales transactions, product costs, inventory levels</strong>, and store metadata.
                 </div>
@@ -1130,49 +1130,49 @@ with selected_tab[2]:
         <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 24px;">
             <div style="font-weight: 600; font-size: 16px; color: #f8fafc; margin-bottom: 16px;">💰 Financial Performance</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div style="background: rgba(34, 197, 94, 0.1); border-radius: 8px; padding: 14px;">
+                <div style="background: rgba(100, 116, 139, 0.15); border-radius: 8px; padding: 14px;">
                     <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Total Revenue</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #22c55e;">${total_revenue:,.0f}</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #f8fafc;">${total_revenue:,.0f}</div>
                 </div>
-                <div style="background: rgba(59, 130, 246, 0.1); border-radius: 8px; padding: 14px;">
+                <div style="background: rgba(100, 116, 139, 0.15); border-radius: 8px; padding: 14px;">
                     <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Total Profit</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">${total_profit:,.0f}</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #f8fafc;">${total_profit:,.0f}</div>
                 </div>
-                <div style="background: rgba(168, 85, 247, 0.1); border-radius: 8px; padding: 14px;">
+                <div style="background: rgba(100, 116, 139, 0.15); border-radius: 8px; padding: 14px;">
                     <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Profit Margin</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #a855f7;">{profit_margin:.1f}%</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #f8fafc;">{profit_margin:.1f}%</div>
                 </div>
-                <div style="background: rgba(249, 115, 22, 0.1); border-radius: 8px; padding: 14px;">
+                <div style="background: rgba(100, 116, 139, 0.15); border-radius: 8px; padding: 14px;">
                     <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Avg per Sale</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #f97316;">${avg_transaction:.2f}</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #f8fafc;">${avg_transaction:.2f}</div>
                 </div>
             </div>
         </div>
-        <div style="background: linear-gradient(135deg, #1e3a5f 0%, #1e3a8a 100%); border-radius: 10px; padding: 24px;">
+        <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 24px;">
             <div style="font-weight: 600; font-size: 16px; color: #f8fafc; margin-bottom: 16px;">💡 Key Insights Discovered</div>
             <div style="display: flex; flex-direction: column; gap: 12px;">
                 <div style="display: flex; align-items: flex-start; gap: 10px;">
-                    <div style="min-width: 24px; height: 24px; background: rgba(34, 197, 94, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">🏆</div>
+                    <div style="min-width: 24px; height: 24px; background: rgba(100, 116, 139, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">🏆</div>
                     <div style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5;">
-                        <strong style="color: #22c55e;">{top_city}</strong> leads in revenue with <strong>${top_city_rev:,.0f}</strong> in total sales
+                        <strong style="color: #f8fafc;">{top_city}</strong> leads in revenue with <strong>${top_city_rev:,.0f}</strong> in total sales
                     </div>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 10px;">
-                    <div style="min-width: 24px; height: 24px; background: rgba(59, 130, 246, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">📈</div>
+                    <div style="min-width: 24px; height: 24px; background: rgba(100, 116, 139, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">📈</div>
                     <div style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5;">
-                        <strong style="color: #3b82f6;">{top_category}</strong> is the top-performing category with ${top_category_rev:,.0f} revenue
+                        <strong style="color: #f8fafc;">{top_category}</strong> is the top-performing category with ${top_category_rev:,.0f} revenue
                     </div>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 10px;">
-                    <div style="min-width: 24px; height: 24px; background: rgba(168, 85, 247, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">⭐</div>
+                    <div style="min-width: 24px; height: 24px; background: rgba(100, 116, 139, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">⭐</div>
                     <div style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5;">
-                        <strong style="color: #a855f7;">{top_product}</strong> generates highest profit at ${top_product_profit:,.0f}
+                        <strong style="color: #f8fafc;">{top_product}</strong> generates highest profit at ${top_product_profit:,.0f}
                     </div>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 10px;">
-                    <div style="min-width: 24px; height: 24px; background: rgba(249, 115, 22, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">📊</div>
+                    <div style="min-width: 24px; height: 24px; background: rgba(100, 116, 139, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">📊</div>
                     <div style="font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5;">
-                        Downtown stores show <strong style="color: #f97316;">higher volume</strong> while Airport stores have <strong style="color: #f97316;">higher margins</strong>
+                        Downtown stores show <strong style="color: #f8fafc;">higher volume</strong> while Airport stores have <strong style="color: #f8fafc;">higher margins</strong>
                     </div>
                 </div>
             </div>
@@ -1185,7 +1185,7 @@ with selected_tab[2]:
     <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 20px; margin-bottom: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #334155 0%, #475569 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                 </div>
                 <div>
@@ -1193,7 +1193,7 @@ with selected_tab[2]:
                     <div style="font-size: 12px; color: #64748b;">Mexico Toy Sales Dataset</div>
                 </div>
             </div>
-            <a href="https://mavenanalytics.io/data-playground/mexico-toy-sales" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 13px;">View Original Dataset →</a>
+            <a href="https://mavenanalytics.io/data-playground/mexico-toy-sales" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #475569 0%, #64748b 100%); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 13px;">View Original Dataset →</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1203,17 +1203,17 @@ with selected_tab[2]:
     <div style="background: linear-gradient(90deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); border: 1px solid #1e293b; border-radius: 10px; padding: 20px;">
         <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 24px; text-align: center;">
             <div>
-                <div style="font-weight: 600; color: #3b82f6; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Frontend</div>
+                <div style="font-weight: 600; color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Frontend</div>
                 <div style="color: #f8fafc; font-size: 14px; font-weight: 500;">Streamlit • Plotly</div>
             </div>
             <div style="width: 1px; height: 30px; background: #334155;"></div>
             <div>
-                <div style="font-weight: 600; color: #22c55e; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Data Processing</div>
+                <div style="font-weight: 600; color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Data Processing</div>
                 <div style="color: #f8fafc; font-size: 14px; font-weight: 500;">Pandas • NumPy</div>
             </div>
             <div style="width: 1px; height: 30px; background: #334155;"></div>
             <div>
-                <div style="font-weight: 600; color: #a855f7; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Machine Learning</div>
+                <div style="font-weight: 600; color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Machine Learning</div>
                 <div style="color: #f8fafc; font-size: 14px; font-weight: 500;">Scikit-learn • Random Forest</div>
             </div>
         </div>
