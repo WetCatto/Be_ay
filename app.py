@@ -11,7 +11,7 @@ from datetime import timedelta
 st.set_page_config(
     page_title="Maven Toys Dashboard",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Shadcn UI Inspired CSS (Refined & Dark Mode Friendly)
@@ -316,23 +316,54 @@ def load_and_prep_data():
 df_sales, df_inventory = load_and_prep_data()
 
 # ==========================================
-# 3. SIDEBAR & FILTERS
+# 3. NAVIGATION & FILTERS
 # ==========================================
-with st.sidebar:
-    st.markdown("### Controls")
+
+# Top Navigation Tabs (merged Statistical Analysis + EDA)
+tab_labels = ["📊 Dashboard", "📈 Statistical Analysis & EDA", "ℹ️ About"]
+selected_tab = st.tabs(tab_labels)
+
+# Data prep for filtering (used by all tabs, but filters only shown on Dashboard)
+max_date = df_sales['Date'].max()
+min_date = df_sales['Date'].min()
+
+# ==========================================
+# 4. MAIN CONTENT
+# ==========================================
+
+# Move imports to top-level for tabs
+import streamlit.components.v1 as components
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+
+def calc_kpi(current_val, prev_val, is_currency=False):
+    delta = current_val - prev_val
+    pct = (delta / prev_val * 100) if prev_val != 0 else 0
+    return current_val, pct
+
+def get_icon_svg(cat):
+    if 'Electronics' in cat: 
+        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>'
+    if 'Clothing' in cat:
+        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M20.38 3.4a1.6 1.6 0 0 0-1.6-1A2.4 2.4 0 0 0 14 6h-4a2.4 2.4 0 0 0-4.8-1.6 1.6 1.6 0 0 0-1.6 1L3 18l4 2 5-6 5 6 4-2z"></path></svg>'
+    if 'Home' in cat:
+        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>'
+    if 'Toy' in cat:
+        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M4.5 3h15"/><path d="M4.5 3v18"/><path d="M19.5 3v18"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>'
+    return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>'
+
+# ---> TAB 1: DASHBOARD
+with selected_tab[0]:
+    # Filters (only shown on Dashboard)
+    st.markdown("<span style='font-size: 12px; color: #94a3b8; font-weight: 500;'>🔧 Filters</span>", unsafe_allow_html=True)
+    filter_cols = st.columns(4)
     
-    # 1. Quick Filters
-    st.markdown("**Time Period**")
-    time_filter = st.radio(
-        "Select Range", 
-        ["All Time", "Last 7 Days", "Last 30 Days", "Year to Date", "Custom"],
-        index=3, # Default to Year to Date
-        label_visibility="collapsed",
-        horizontal=False
-    )
-    
-    max_date = df_sales['Date'].max()
-    min_date = df_sales['Date'].min()
+    with filter_cols[0]:
+        time_filter = st.selectbox(
+            "Time",
+            ["All Time", "Last 7 Days", "Last 30 Days", "Year to Date", "Custom"],
+            index=3
+        )
     
     if time_filter == "All Time":
         start_date = min_date
@@ -347,77 +378,57 @@ with st.sidebar:
         start_date = pd.Timestamp(year=max_date.year, month=1, day=1)
         end_date = max_date
     else:
-        # Custom
-        d = st.date_input("Custom Range", value=(max_date - timedelta(days=365), max_date), min_value=min_date, max_value=max_date)
-        if len(d) == 2:
-            start_date, end_date = pd.to_datetime(d[0]), pd.to_datetime(d[1])
-        else:
-            start_date, end_date = pd.to_datetime(d[0]), pd.to_datetime(d[0])
-
-    st.markdown("---")
+        with filter_cols[0]:
+            d = st.date_input("Range", value=(max_date - timedelta(days=365), max_date), min_value=min_date, max_value=max_date)
+            if len(d) == 2:
+                start_date, end_date = pd.to_datetime(d[0]), pd.to_datetime(d[1])
+            else:
+                start_date, end_date = pd.to_datetime(d[0]), pd.to_datetime(d[0])
     
-    cities = st.multiselect("Cities", df_sales['Store_City'].unique())
-    categories = st.multiselect("Categories", df_sales['Product_Category'].unique())
-    stores = st.multiselect("Stores", df_sales['Store_Name'].unique())
-
-    st.markdown("---")
+    with filter_cols[1]:
+        cities = st.multiselect("City", df_sales['Store_City'].unique(), placeholder="All Cities")
     
-    st.markdown(
-        """
-        <div style='margin-top: 32px; text-align: center;'>
-            <a href='https://mavenanalytics.io/data-playground/mexico-toy-sales' target='_blank' style='color: #94a3b8; font-size: 11px; text-decoration: none; font-family: sans-serif;'>
-                Data Source: Maven Analytics
-            </a>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
+    with filter_cols[2]:
+        categories = st.multiselect("Category", df_sales['Product_Category'].unique(), placeholder="All Categories")
+    
+    with filter_cols[3]:
+        stores = st.multiselect("Store", df_sales['Store_Name'].unique(), placeholder="All Stores")
+    
+    # Apply Filtering
+    mask_curr = (df_sales['Date'] >= start_date) & (df_sales['Date'] <= end_date)
+    if cities: mask_curr &= df_sales['Store_City'].isin(cities)
+    if categories: mask_curr &= df_sales['Product_Category'].isin(categories)
+    if stores: mask_curr &= df_sales['Store_Name'].isin(stores)
+    curr_sales = df_sales[mask_curr]
+    
+    # Prev Period
+    duration_days = (end_date - start_date).days + 1
+    prev_end = start_date - timedelta(days=1)
+    prev_start = prev_end - timedelta(days=duration_days - 1)
+    mask_prev = (df_sales['Date'] >= prev_start) & (df_sales['Date'] <= prev_end)
+    if cities: mask_prev &= df_sales['Store_City'].isin(cities)
+    if categories: mask_prev &= df_sales['Product_Category'].isin(categories)
+    if stores: mask_prev &= df_sales['Store_Name'].isin(stores)
+    prev_sales = df_sales[mask_prev]
+    
+    # Inventory
+    mask_inv = pd.Series([True] * len(df_inventory))
+    if cities: mask_inv &= df_inventory['Store_City'].isin(cities)
+    if categories: mask_inv &= df_inventory['Product_Category'].isin(categories)
+    if stores: mask_inv &= df_inventory['Store_Name'].isin(stores)
+    filtered_inv = df_inventory[mask_inv]
+    
+    st.markdown('<div class="main-header">Maven Toys KPI</div>', unsafe_allow_html=True)
+    
+    # ---> BLOCK 1: KPIs (Animated)
+    # Prepare Data
+    kpi_rev, delta_rev = calc_kpi(curr_sales['Revenue'].sum(), prev_sales['Revenue'].sum(), True)
+    kpi_profit, delta_profit = calc_kpi(curr_sales['Profit'].sum(), prev_sales['Profit'].sum(), True)
+    kpi_units, delta_units = calc_kpi(curr_sales['Units'].sum(), prev_sales['Units'].sum(), False)
+    inv_stock = filtered_inv['Stock_On_Hand'].sum()
 
-# Start Filtering
-mask_curr = (df_sales['Date'] >= start_date) & (df_sales['Date'] <= end_date)
-if cities: mask_curr &= df_sales['Store_City'].isin(cities)
-if categories: mask_curr &= df_sales['Product_Category'].isin(categories)
-if stores: mask_curr &= df_sales['Store_Name'].isin(stores)
-curr_sales = df_sales[mask_curr]
-
-# Prev Period
-duration_days = (end_date - start_date).days + 1
-prev_end = start_date - timedelta(days=1)
-prev_start = prev_end - timedelta(days=duration_days - 1)
-mask_prev = (df_sales['Date'] >= prev_start) & (df_sales['Date'] <= prev_end)
-if cities: mask_prev &= df_sales['Store_City'].isin(cities)
-if categories: mask_prev &= df_sales['Product_Category'].isin(categories)
-if stores: mask_prev &= df_sales['Store_Name'].isin(stores)
-prev_sales = df_sales[mask_prev]
-
-# Inventory
-mask_inv = pd.Series([True] * len(df_inventory))
-if cities: mask_inv &= df_inventory['Store_City'].isin(cities)
-if categories: mask_inv &= df_inventory['Product_Category'].isin(categories)
-if stores: mask_inv &= df_inventory['Store_Name'].isin(stores)
-filtered_inv = df_inventory[mask_inv]
-
-# ==========================================
-# 4. MAIN CONTENT
-# ==========================================
-st.markdown('<div class="main-header">Maven Toys KPI</div>', unsafe_allow_html=True)
-
-# ---> BLOCK 1: KPIs (Animated)
-import streamlit.components.v1 as components
-
-def calc_kpi(current_val, prev_val, is_currency=False):
-    delta = current_val - prev_val
-    pct = (delta / prev_val * 100) if prev_val != 0 else 0
-    return current_val, pct
-
-# Prepare Data
-kpi_rev, delta_rev = calc_kpi(curr_sales['Revenue'].sum(), prev_sales['Revenue'].sum(), True)
-kpi_profit, delta_profit = calc_kpi(curr_sales['Profit'].sum(), prev_sales['Profit'].sum(), True)
-kpi_units, delta_units = calc_kpi(curr_sales['Units'].sum(), prev_sales['Units'].sum(), False)
-inv_stock = filtered_inv['Stock_On_Hand'].sum()
-
-# Custom Javascript Component for Ticking Numbers
-kpi_html = f"""
+    # Custom Javascript Component for Ticking Numbers
+    kpi_html = f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -561,157 +572,145 @@ kpi_html = f"""
 </html>
 """
 
-components.html(kpi_html, height=130) # Height adjusted for the card row
+    components.html(kpi_html, height=130)
 
-st.markdown(" ") 
+    st.markdown(" ") 
 
-# ---> BLOCK 2: LINE CHARTS (Revenue & Return Rate)
-col_l1, col_l2 = st.columns(2)
+    # ---> BLOCK 2: LINE CHARTS (Revenue & Return Rate)
+    col_l1, col_l2 = st.columns(2)
 
-with col_l1:
-    st.markdown("### Revenue Trend")
-    # Base Data (Respects Time Filter)
-    ts_data = curr_sales.set_index('Date').resample('W')['Revenue'].sum().reset_index()
-    ts_data['MA'] = ts_data['Revenue'].rolling(window=3).mean()
-    
-    # Forecast Data (Respects Cat/Loc filters, but uses ALL Time history for better ML)
-    mask_ml = (df_sales['Date'] >= df_sales['Date'].min()) # All time
-    if cities: mask_ml &= df_sales['Store_City'].isin(cities)
-    if categories: mask_ml &= df_sales['Product_Category'].isin(categories)
-    if stores: mask_ml &= df_sales['Store_Name'].isin(stores)
-    
-    df_full_history = df_sales[mask_ml].set_index('Date').resample('W')['Revenue'].sum().reset_index()
-    
-    fig_ts = go.Figure()
-    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['Revenue'], name='Actual', line=dict(color='#3b82f6', width=2))) 
-    fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['MA'], name='Trend', line=dict(color='#f97316', dash='dash'))) 
-    
-    # Advanced ML Forecast (Hybrid: Trend + Seasonality)
-    # Only show forecast if we are looking at the latest data (not historical analysis)
-    from sklearn.ensemble import RandomForestRegressor
-    from sklearn.linear_model import LinearRegression
-    
-    if len(df_full_history) > 12 and end_date >= max_date: # Ensure enough history AND we are at the end
-        # 1. Feature Engineering on FULL HISTORY
-        df_ml = df_full_history.copy()
-        df_ml['Ordinal'] = df_ml['Date'].apply(lambda x: x.toordinal())
-        df_ml['Month'] = df_ml['Date'].dt.month
-        df_ml['Week'] = df_ml['Date'].dt.isocalendar().week.astype(int)
+    with col_l1:
+        st.markdown("### Revenue Trend")
+        # Base Data (Respects Time Filter)
+        ts_data = curr_sales.set_index('Date').resample('W')['Revenue'].sum().reset_index()
+        ts_data['MA'] = ts_data['Revenue'].rolling(window=3).mean()
         
-        X = df_ml[['Ordinal', 'Month', 'Week']]
-        y = df_ml['Revenue']
+        # Forecast Data (Respects Cat/Loc filters, but uses ALL Time history for better ML)
+        mask_ml = (df_sales['Date'] >= df_sales['Date'].min()) # All time
+        if cities: mask_ml &= df_sales['Store_City'].isin(cities)
+        if categories: mask_ml &= df_sales['Product_Category'].isin(categories)
+        if stores: mask_ml &= df_sales['Store_Name'].isin(stores)
         
-        # 2. Hybrid Model Training
-        # Part A: Linear Trend (Extrapolation)
-        m_trend = LinearRegression()
-        m_trend.fit(df_ml[['Ordinal']], y)
-        df_ml['Trend'] = m_trend.predict(df_ml[['Ordinal']])
-        df_ml['Residuals'] = y - df_ml['Trend']
+        df_full_history = df_sales[mask_ml].set_index('Date').resample('W')['Revenue'].sum().reset_index()
         
-        # Part B: Random Forest (Seasonality on Residuals)
-        m_season = RandomForestRegressor(n_estimators=100, random_state=42)
-        m_season.fit(df_ml[['Month', 'Week']], df_ml['Residuals'])
+        fig_ts = go.Figure()
+        fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['Revenue'], name='Actual', line=dict(color='#3b82f6', width=2))) 
+        fig_ts.add_trace(go.Scatter(x=ts_data['Date'], y=ts_data['MA'], name='Trend', line=dict(color='#f97316', dash='dash'))) 
         
-        # 3. Future Prediction
-        last_date = df_ml['Date'].max()
-        future_dates = [last_date + timedelta(weeks=i) for i in range(1, 13)] 
-        future_df = pd.DataFrame({'Date': future_dates})
-        future_df['Ordinal'] = future_df['Date'].apply(lambda x: x.toordinal())
-        future_df['Month'] = future_df['Date'].dt.month
-        future_df['Week'] = future_df['Date'].dt.isocalendar().week.astype(int)
+        # Advanced ML Forecast (Hybrid: Trend + Seasonality)
+        if len(df_full_history) > 12 and end_date >= max_date:
+            df_ml = df_full_history.copy()
+            df_ml['Ordinal'] = df_ml['Date'].apply(lambda x: x.toordinal())
+            df_ml['Month'] = df_ml['Date'].dt.month
+            df_ml['Week'] = df_ml['Date'].dt.isocalendar().week.astype(int)
+            
+            X = df_ml[['Ordinal', 'Month', 'Week']]
+            y = df_ml['Revenue']
+            
+            m_trend = LinearRegression()
+            m_trend.fit(df_ml[['Ordinal']], y)
+            df_ml['Trend'] = m_trend.predict(df_ml[['Ordinal']])
+            df_ml['Residuals'] = y - df_ml['Trend']
+            
+            m_season = RandomForestRegressor(n_estimators=100, random_state=42)
+            m_season.fit(df_ml[['Month', 'Week']], df_ml['Residuals'])
+            
+            last_date = df_ml['Date'].max()
+            future_dates = [last_date + timedelta(weeks=i) for i in range(1, 13)] 
+            future_df = pd.DataFrame({'Date': future_dates})
+            future_df['Ordinal'] = future_df['Date'].apply(lambda x: x.toordinal())
+            future_df['Month'] = future_df['Date'].dt.month
+            future_df['Week'] = future_df['Date'].dt.isocalendar().week.astype(int)
+            
+            future_trend = m_trend.predict(future_df[['Ordinal']])
+            future_season = m_season.predict(future_df[['Month', 'Week']])
+            future_vals = future_trend + future_season
+            
+            fig_ts.add_trace(go.Scatter(
+                x=future_dates, 
+                y=future_vals, 
+                name='Forecast',
+                line=dict(color='#8b5cf6', dash='dot', width=2) 
+            ))
         
-        # Predict Components
-        future_trend = m_trend.predict(future_df[['Ordinal']])
-        future_season = m_season.predict(future_df[['Month', 'Week']])
-        future_vals = future_trend + future_season
+        fig_ts.update_layout(
+            height=350,
+            margin=dict(l=0, r=0, t=10, b=0),
+            hovermode='x unified',
+            xaxis_title="Date",
+            yaxis_title="Revenue ($)",
+            legend=dict(orientation="h", y=1.1, x=1, xanchor='right'),
+            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
+        )
+        fig_ts.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+        fig_ts.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+        st.plotly_chart(fig_ts, use_container_width=True)
+
+    with col_l2:
+        st.markdown("### Return Rate Trend")
+        # Simulate Return Rate
+        rr_data = curr_sales.set_index('Date').resample('W')['Units'].sum().reset_index()
+        np.random.seed(42)
+        # Generate smoothed noise
+        noise = np.random.normal(0, 0.3, len(rr_data)) # Reduced noise std dev
+        rr_data['Return_Rate'] = 2.5 + noise
+        # Apply rolling smoothing
+        rr_data['Return_Rate'] = rr_data['Return_Rate'].rolling(window=4, min_periods=1).mean()
+        rr_data['Return_Rate'] = rr_data['Return_Rate'].clip(0, 5)
         
-        fig_ts.add_trace(go.Scatter(
-            x=future_dates, 
-            y=future_vals, 
-            name='Forecast', # Concise Name
-            line=dict(color='#8b5cf6', dash='dot', width=2) 
+        fig_rr = go.Figure()
+        fig_rr.add_trace(go.Scatter(
+            x=rr_data['Date'], 
+            y=rr_data['Return_Rate'], 
+            name='Return Rate',
+            mode='lines',
+            fill='tozeroy', 
+            line=dict(color='#ef4444', width=2), 
+            fillcolor='rgba(239, 68, 68, 0.1)'
         ))
-    
-    fig_ts.update_layout(
-        height=350,
-        margin=dict(l=0, r=0, t=10, b=0),
-        hovermode='x unified',
-        xaxis_title="Date",
-        yaxis_title="Revenue ($)",
-        legend=dict(orientation="h", y=1.1, x=1, xanchor='right'),
-        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
-    )
-    # Adaptive grid color
-    fig_ts.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-    fig_ts.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-    st.plotly_chart(fig_ts, width="stretch")
-
-with col_l2:
-    st.markdown("### Return Rate Trend")
-    # Simulate Return Rate
-    rr_data = curr_sales.set_index('Date').resample('W')['Units'].sum().reset_index()
-    np.random.seed(42)
-    # Generate smoothed noise
-    noise = np.random.normal(0, 0.3, len(rr_data)) # Reduced noise std dev
-    rr_data['Return_Rate'] = 2.5 + noise
-    # Apply rolling smoothing
-    rr_data['Return_Rate'] = rr_data['Return_Rate'].rolling(window=4, min_periods=1).mean()
-    rr_data['Return_Rate'] = rr_data['Return_Rate'].clip(0, 5) 
-    
-    fig_rr = go.Figure()
-    fig_rr.add_trace(go.Scatter(
-        x=rr_data['Date'], 
-        y=rr_data['Return_Rate'], 
-        name='Return Rate',
-        mode='lines',
-        fill='tozeroy', 
-        line=dict(color='#ef4444', width=2), 
-        fillcolor='rgba(239, 68, 68, 0.1)'
-    ))
-    
-    fig_rr.update_layout(
-        height=350,
-        margin=dict(l=0, r=0, t=10, b=0),
-        hovermode='x unified',
-        xaxis_title="Date",
-        yaxis_title="Return Rate (%)",
-        showlegend=False,
-        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
-    )
-    fig_rr.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-    fig_rr.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-    st.plotly_chart(fig_rr, width="stretch")
-
-
-# ---> BLOCK 3: SALES BY LOCATION & PRODUCT MIX
-col_m1, col_m2 = st.columns([1, 1])
-
-with col_m1:
-    st.markdown("### Sales by Location")
-    
-    # Calculate Sales data
-    loc_sales = curr_sales.groupby('Store_City').agg({'Revenue':'sum'}).reset_index()
-    # Prev sales for delta
-    loc_prev = prev_sales.groupby('Store_City').agg({'Revenue':'sum'}).reset_index()
-    loc_sales = loc_sales.merge(loc_prev, on='Store_City', how='left', suffixes=('', '_prev')).fillna(0)
-    
-    # Fix division by zero
-    loc_sales['Delta'] = loc_sales.apply(lambda row: (row['Revenue'] - row['Revenue_prev']) / row['Revenue_prev'] * 100 if row['Revenue_prev'] > 0 else 0.0, axis=1)
-    loc_sales = loc_sales.sort_values('Revenue', ascending=False).head(6) 
-    
-    # Use Total Revenue for "Share of Sales" calculation
-    total_rev = curr_sales['Revenue'].sum() if len(curr_sales) > 0 else 1
-
-    # Render HTML Rows
-    # Increased styling for larger appearance
-    html_content = ""
-    for _, row in loc_sales.iterrows():
-        pct = (row['Revenue'] / total_rev) * 100
-        delta_val = row['Delta']
-        delta_cls = "badge-pos" if delta_val >= 0 else "badge-neg"
-        delta_sign = "+" if delta_val >= 0 else ""
         
-        html_content += f"""
+        fig_rr.update_layout(
+            height=350,
+            margin=dict(l=0, r=0, t=10, b=0),
+            hovermode='x unified',
+            xaxis_title="Date",
+            yaxis_title="Return Rate (%)",
+            showlegend=False,
+            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
+        )
+        fig_rr.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+        fig_rr.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+        st.plotly_chart(fig_rr, use_container_width=True)
+
+
+    # ---> BLOCK 3: SALES BY LOCATION & PRODUCT MIX
+    col_m1, col_m2 = st.columns([1, 1])
+
+    with col_m1:
+        st.markdown("### Sales by Location")
+        
+        # Calculate Sales data
+        loc_sales = curr_sales.groupby('Store_City').agg({'Revenue':'sum'}).reset_index()
+        # Prev sales for delta
+        loc_prev = prev_sales.groupby('Store_City').agg({'Revenue':'sum'}).reset_index()
+        loc_sales = loc_sales.merge(loc_prev, on='Store_City', how='left', suffixes=('', '_prev')).fillna(0)
+        
+        # Fix division by zero
+        loc_sales['Delta'] = loc_sales.apply(lambda row: (row['Revenue'] - row['Revenue_prev']) / row['Revenue_prev'] * 100 if row['Revenue_prev'] > 0 else 0.0, axis=1)
+        loc_sales = loc_sales.sort_values('Revenue', ascending=False).head(6) 
+        
+        # Use Total Revenue for "Share of Sales" calculation
+        total_rev = curr_sales['Revenue'].sum() if len(curr_sales) > 0 else 1
+
+        # Render HTML Rows
+        html_content = ""
+        for _, row in loc_sales.iterrows():
+            pct = (row['Revenue'] / total_rev) * 100
+            delta_val = row['Delta']
+            delta_cls = "badge-pos" if delta_val >= 0 else "badge-neg"
+            delta_sign = "+" if delta_val >= 0 else ""
+            
+            html_content += f"""
         <div class="location-row">
             <div class="loc-info">
                 <span class="loc-name">{row['Store_City']}</span>
@@ -725,70 +724,55 @@ with col_m1:
             </div>
         </div>
         """
-    st.markdown(html_content, unsafe_allow_html=True)
+        st.markdown(html_content, unsafe_allow_html=True)
 
-with col_m2:
-    st.markdown("### Category Mix")
-    # Sunburst
-    top_cats = curr_sales.groupby('Product_Category')['Revenue'].sum().nlargest(5).index
-    sunburst_data = curr_sales[curr_sales['Product_Category'].isin(top_cats)].groupby(['Product_Category', 'Product_Name'])['Revenue'].sum().reset_index()
-    sunburst_data = sunburst_data.groupby('Product_Category').apply(lambda x: x.nlargest(3, 'Revenue'), include_groups=False).reset_index()
-    
-    # Custom Theme Colors (Blue, Orange, Emerald, Violet, Cyan)
-    theme_colors = ['#3b82f6', '#f97316', '#10b981', '#8b5cf6', '#06b6d4', '#ec4899']
-    
-    fig_sb = px.sunburst(
-        sunburst_data,
-        path=['Product_Category', 'Product_Name'],
-        values='Revenue',
-        color_discrete_sequence=theme_colors
-    )
-    fig_sb.update_traces(textfont=dict(color='white')) # Force white text for readability against dark slices
-    fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)') # Increased height to fill space
-    st.plotly_chart(fig_sb, width="stretch")
+    with col_m2:
+        st.markdown("### Category Mix")
+        # Sunburst
+        top_cats = curr_sales.groupby('Product_Category')['Revenue'].sum().nlargest(5).index
+        sunburst_data = curr_sales[curr_sales['Product_Category'].isin(top_cats)].groupby(['Product_Category', 'Product_Name'])['Revenue'].sum().reset_index()
+        sunburst_data = sunburst_data.groupby('Product_Category').apply(lambda x: x.nlargest(3, 'Revenue'), include_groups=False).reset_index()
+        
+        # Custom Theme Colors
+        theme_colors = ['#3b82f6', '#f97316', '#10b981', '#8b5cf6', '#06b6d4', '#ec4899']
+        
+        fig_sb = px.sunburst(
+            sunburst_data,
+            path=['Product_Category', 'Product_Name'],
+            values='Revenue',
+            color_discrete_sequence=theme_colors
+        )
+        fig_sb.update_traces(textfont=dict(color='white'))
+        fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_sb, use_container_width=True)
 
-# ---> BLOCK 4: PRODUCT PERFORMANCE (Table)
-col_p1, col_p2 = st.columns([3, 1])
-with col_p1:
-    st.markdown("### Product Performance")
-with col_p2:
-    show_mode = st.selectbox("Show", ["Top Sellers", "Lowest Performing"], label_visibility="collapsed")
+    # ---> BLOCK 4: PRODUCT PERFORMANCE (Table)
+    col_p1, col_p2 = st.columns([3, 1])
+    with col_p1:
+        st.markdown("### Product Performance")
+    with col_p2:
+        show_mode = st.selectbox("Show", ["Top Sellers", "Lowest Performing"], label_visibility="collapsed")
 
-prod_perf = curr_sales.groupby(['Product_Name', 'Product_Category']).agg({
-    'Profit': 'sum',
-    'Units': 'sum'
-}).reset_index()
+    prod_perf = curr_sales.groupby(['Product_Name', 'Product_Category']).agg({
+        'Profit': 'sum',
+        'Units': 'sum'
+    }).reset_index()
 
-if show_mode == "Top Sellers":
-    prod_perf = prod_perf.sort_values('Profit', ascending=False).head(8)
-else:
-    prod_perf = prod_perf[prod_perf['Profit'] > 0].sort_values('Profit', ascending=True).head(8)
+    if show_mode == "Top Sellers":
+        prod_perf = prod_perf.sort_values('Profit', ascending=False).head(8)
+    else:
+        prod_perf = prod_perf[prod_perf['Profit'] > 0].sort_values('Profit', ascending=True).head(8)
 
-def get_icon_svg(cat):
-    # Lucide-style SVGs
-    if 'Electronics' in cat: 
-        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>'
-    if 'Clothing' in cat:
-        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M20.38 3.4a1.6 1.6 0 0 0-1.6-1A2.4 2.4 0 0 0 14 6h-4a2.4 2.4 0 0 0-4.8-1.6 1.6 1.6 0 0 0-1.6 1L3 18l4 2 5-6 5 6 4-2z"></path></svg>'
-    if 'Home' in cat:
-        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>'
-    if 'Toy' in cat:
-        return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M4.5 3h15"/><path d="M4.5 3v18"/><path d="M19.5 3v18"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>' # Using a generic box/block icon for toys as teddy bear svgs are complex
-    return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>'
+    # Generate HTML Table
+    table_html = '<table class="prod-table"><thead><tr><th>Product</th><th>Price</th><th>Cost</th><th>Sold</th><th>Profit</th></tr></thead><tbody>'
 
-# Generate HTML Table
-# Headers matching the data types in user's snippet (Price, Cost, Sold count)
-table_html = '<table class="prod-table"><thead><tr><th>Product</th><th>Price</th><th>Cost</th><th>Sold</th><th>Profit</th></tr></thead><tbody>'
-
-for _, row in prod_perf.iterrows():
-    icon = get_icon_svg(row['Product_Category'])
-    # Since we're grouping by product, we need to get the price and cost from the original data
-    product_data = curr_sales[curr_sales['Product_Name'] == row['Product_Name']]
-    product_price = product_data['Product_Price'].iloc[0] if len(product_data) > 0 else 0
-    product_cost = product_data['Product_Cost'].iloc[0] if len(product_data) > 0 else 0
-    
-    # IMPORTANT: No indentation in HTML string to prevent markdown code block rendering
-    table_html += f"""<tr>
+    for _, row in prod_perf.iterrows():
+        icon = get_icon_svg(row['Product_Category'])
+        product_data = curr_sales[curr_sales['Product_Name'] == row['Product_Name']]
+        product_price = product_data['Product_Price'].iloc[0] if len(product_data) > 0 else 0
+        product_cost = product_data['Product_Cost'].iloc[0] if len(product_data) > 0 else 0
+        
+        table_html += f"""<tr>
 <td><div class="prod-cell">
 <div class="prod-icon">{icon}</div>
 <span class="prod-name">{row['Product_Name']}</span>
@@ -799,72 +783,65 @@ for _, row in prod_perf.iterrows():
 <td><span class="prod-val">${row['Profit']:,.0f}</span></td>
 </tr>"""
 
-table_html += "</tbody></table>"
+    table_html += "</tbody></table>"
 
-st.markdown(table_html, unsafe_allow_html=True)
+    st.markdown(table_html, unsafe_allow_html=True)
 
-# ----> BLOCK 5: LOW STOCK INDICATORS
-st.markdown(" ")
+    # ----> BLOCK 5: LOW STOCK INDICATORS
+    st.markdown(" ")
 
-# Header with view mode selector
-col_header, col_filter = st.columns([3, 1])
-with col_header:
-    st.markdown("### Low Stock Indicators")
-with col_filter:
-    view_mode = st.selectbox(
-        "View Mode",
-        ["Aggregated View", "Store View"],
-        label_visibility="collapsed",
-        key="low_stock_view_mode"
-    )
+    # Header with view mode selector
+    col_header, col_filter = st.columns([3, 1])
+    with col_header:
+        st.markdown("### Low Stock Indicators")
+    with col_filter:
+        view_mode = st.selectbox(
+            "View Mode",
+            ["Aggregated View", "Store View"],
+            label_visibility="collapsed",
+            key="low_stock_view_mode"
+        )
 
-# Define low stock threshold
-LOW_STOCK_THRESHOLD = 10
+    # Define low stock threshold
+    LOW_STOCK_THRESHOLD = 10
 
-# Calculate low stock products based on view mode
-if view_mode == "Aggregated View":
-    # Aggregated: Group by product and sum stock across all stores
-    low_stock_raw = filtered_inv[filtered_inv['Stock_On_Hand'] <= LOW_STOCK_THRESHOLD].copy()
-    low_stock = low_stock_raw.groupby(['Product_Name', 'Product_Category']).agg({
-        'Stock_On_Hand': 'sum',
-        'Store_Name': 'count'  # Count stores affected
-    }).reset_index()
-    low_stock.rename(columns={'Store_Name': 'Stores_Affected'}, inplace=True)
-    low_stock = low_stock.sort_values('Stock_On_Hand', ascending=True).head(15)
-else:
-    # Store-Specific: Show individual store locations
-    low_stock = filtered_inv[filtered_inv['Stock_On_Hand'] <= LOW_STOCK_THRESHOLD].copy()
-    low_stock = low_stock[['Product_Name', 'Product_Category', 'Store_Name', 'Store_City', 'Stock_On_Hand']].copy()
-    low_stock = low_stock.sort_values('Stock_On_Hand', ascending=True).head(15)
+    # Calculate low stock products based on view mode
+    if view_mode == "Aggregated View":
+        low_stock_raw = filtered_inv[filtered_inv['Stock_On_Hand'] <= LOW_STOCK_THRESHOLD].copy()
+        low_stock = low_stock_raw.groupby(['Product_Name', 'Product_Category']).agg({
+            'Stock_On_Hand': 'sum',
+            'Store_Name': 'count'
+        }).reset_index()
+        low_stock.rename(columns={'Store_Name': 'Stores_Affected'}, inplace=True)
+        low_stock = low_stock.sort_values('Stock_On_Hand', ascending=True).head(15)
+    else:
+        low_stock = filtered_inv[filtered_inv['Stock_On_Hand'] <= LOW_STOCK_THRESHOLD].copy()
+        low_stock = low_stock[['Product_Name', 'Product_Category', 'Store_Name', 'Store_City', 'Stock_On_Hand']].copy()
+        low_stock = low_stock.sort_values('Stock_On_Hand', ascending=True).head(15)
 
-
-
-if len(low_stock) > 0:
-    # Create a grid layout for low stock items
-    low_stock_html = '<div class="low-stock-grid">'
-    
-    for _, row in low_stock.iterrows():
-        stock_level = row['Stock_On_Hand']
-        # Determine severity
-        if stock_level == 0:
-            badge_text = "OUT OF STOCK"
-            badge_class = "badge-critical"
-        elif stock_level <= 5:
-            badge_text = "CRITICAL"
-            badge_class = "badge-critical"
-        else:
-            badge_text = "LOW"
-            badge_class = "badge-warning"
+    if len(low_stock) > 0:
+        low_stock_html = '<div class="low-stock-grid">'
         
-        # Determine what to show in the bottom right based on view mode
-        if view_mode == "Aggregated View":
-            bottom_right_main = str(int(row['Stores_Affected']))
-            bottom_right_label = f"Store{'s' if row['Stores_Affected'] > 1 else ''}"
-        else:
-            bottom_right_main = row['Store_Name']
-            bottom_right_label = row['Store_City']
-        
-        low_stock_html += f"""<div class="low-stock-card">
+        for _, row in low_stock.iterrows():
+            stock_level = row['Stock_On_Hand']
+            if stock_level == 0:
+                badge_text = "OUT OF STOCK"
+                badge_class = "badge-critical"
+            elif stock_level <= 5:
+                badge_text = "CRITICAL"
+                badge_class = "badge-critical"
+            else:
+                badge_text = "LOW"
+                badge_class = "badge-warning"
+            
+            if view_mode == "Aggregated View":
+                bottom_right_main = str(int(row['Stores_Affected']))
+                bottom_right_label = f"Store{'s' if row['Stores_Affected'] > 1 else ''}"
+            else:
+                bottom_right_main = row['Store_Name']
+                bottom_right_label = row['Store_City']
+            
+            low_stock_html += f"""<div class="low-stock-card">
 <div class="low-stock-header">
 <div class="low-stock-product">
 <div class="low-stock-name">{row['Product_Name']}</div>
@@ -883,11 +860,258 @@ if len(low_stock) > 0:
 </div>
 </div>
 </div>"""
+        
+        low_stock_html += "</div>"
+        st.markdown(low_stock_html, unsafe_allow_html=True)
+    else:
+        st.info("✅ All products are adequately stocked!")
+
+# ---> TAB 2: STATISTICAL ANALYSIS & EDA
+with selected_tab[1]:
+    st.markdown('<div class="main-header">Statistical Analysis & EDA</div>', unsafe_allow_html=True)
     
+    # --- SECTION 1: Correlation Analysis ---
+    st.markdown("### Correlation Analysis")
     
+    # Create numeric aggregations for correlation
+    corr_data = curr_sales.groupby('Product_Name').agg({
+        'Revenue': 'sum',
+        'Profit': 'sum', 
+        'Units': 'sum',
+        'Product_Price': 'first',
+        'Product_Cost': 'first'
+    }).reset_index()
+    corr_data['Margin_Pct'] = (corr_data['Profit'] / corr_data['Revenue'] * 100)
     
+    corr_matrix = corr_data[['Revenue', 'Profit', 'Units', 'Product_Price', 'Product_Cost', 'Margin_Pct']].corr()
     
-    low_stock_html += "</div>"
-    st.markdown(low_stock_html, unsafe_allow_html=True)
-else:
-    st.info("✅ All products are adequately stocked!")
+    fig_corr = px.imshow(
+        corr_matrix,
+        text_auto='.2f',
+        color_continuous_scale='RdBu_r',
+        aspect='auto'
+    )
+    fig_corr.update_layout(
+        height=400,
+        plot_bgcolor='rgba(0,0,0,0)', 
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+    st.plotly_chart(fig_corr, use_container_width=True)
+    
+    st.markdown("---")
+    
+    # --- SECTION 2: Store Location Performance ---
+    st.markdown("### Store Location Performance")
+    
+    # Group by Store_Location (Airport, Downtown, Commercial, Residential)
+    if 'Store_Location' in curr_sales.columns:
+        loc_perf = curr_sales.groupby('Store_Location').agg({
+            'Revenue': 'sum',
+            'Profit': 'sum',
+            'Units': 'sum'
+        }).reset_index()
+        loc_perf['Profit_Margin'] = (loc_perf['Profit'] / loc_perf['Revenue'] * 100).round(1)
+        
+        col_loc1, col_loc2 = st.columns(2)
+        
+        with col_loc1:
+            st.markdown("#### Revenue & Profit by Location")
+            fig_loc_rev = px.bar(
+                loc_perf.melt(id_vars='Store_Location', value_vars=['Revenue', 'Profit']),
+                x='Store_Location', 
+                y='value',
+                color='variable',
+                barmode='group',
+                text='value',
+                color_discrete_map={'Revenue': '#3b82f6', 'Profit': '#10b981'}
+            )
+            fig_loc_rev.update_traces(textposition='inside', texttemplate='$%{text:,.0f}')
+            fig_loc_rev.update_layout(height=350, legend_title_text='', plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig_loc_rev, use_container_width=True)
+        
+        with col_loc2:
+            st.markdown("#### Category Revenue Breakdown")
+            cat_rev = curr_sales.groupby('Product_Category')['Revenue'].sum().reset_index()
+            fig_cat = px.pie(
+                cat_rev,
+                values='Revenue',
+                names='Product_Category',
+                hole=0.4,
+                color_discrete_sequence=['#3b82f6', '#f97316', '#10b981', '#8b5cf6', '#06b6d4']
+            )
+            fig_cat.update_traces(textposition='inside', textinfo='label+percent')
+            fig_cat.update_layout(height=350, showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig_cat, use_container_width=True)
+        
+        # Monthly Trend - More Insightful (Uses full data for proper seasonality)
+        st.markdown("#### Monthly Sales Trend (Seasonality)")
+        monthly_sales = df_sales.set_index('Date').resample('M').agg({
+            'Revenue': 'sum',
+            'Profit': 'sum'
+        }).reset_index()
+        
+        fig_monthly = px.line(
+            monthly_sales,
+            x='Date',
+            y=['Revenue', 'Profit'],
+            markers=True,
+            color_discrete_map={'Revenue': '#3b82f6', 'Profit': '#10b981'}
+        )
+        fig_monthly.update_layout(
+            height=300,
+            legend_title_text='',
+            hovermode='x unified',
+            plot_bgcolor='rgba(0,0,0,0)', 
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        fig_monthly.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+        fig_monthly.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+        st.plotly_chart(fig_monthly, use_container_width=True)
+    else:
+        st.info("Store location data not available in dataset")
+    
+    st.markdown("---")
+    
+    # --- SECTION 3: Stock Velocity Analysis ---
+    st.markdown("### Stock Velocity Analysis")
+    
+    # Calculate velocity (units sold per product)
+    velocity = curr_sales.groupby(['Product_Name', 'Product_Category']).agg({
+        'Units': 'sum',
+        'Revenue': 'sum'
+    }).reset_index()
+    velocity = velocity.sort_values('Units', ascending=False)
+    
+    col_vel1, col_vel2 = st.columns(2)
+    
+    with col_vel1:
+        st.markdown('<h4 style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg> High Velocity (Top 10)</h4>', unsafe_allow_html=True)
+        high_vel = velocity.head(10)
+        fig_high = px.bar(
+            high_vel.sort_values('Units'),
+            x='Units',
+            y='Product_Name',
+            orientation='h',
+            text='Units'
+        )
+        fig_high.update_traces(
+            marker_color='#10b981',
+            textposition='inside',
+            texttemplate='%{text:,.0f}'
+        )
+        fig_high.update_layout(
+            height=400, 
+            yaxis={'categoryorder':'total ascending'},
+            showlegend=False,
+            plot_bgcolor='rgba(0,0,0,0)', 
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        st.plotly_chart(fig_high, use_container_width=True)
+    
+    with col_vel2:
+        st.markdown('<h4 style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg> Slow Moving (Bottom 10)</h4>', unsafe_allow_html=True)
+        slow_vel = velocity.tail(10)
+        fig_slow = px.bar(
+            slow_vel.sort_values('Units', ascending=False),
+            x='Units',
+            y='Product_Name',
+            orientation='h',
+            text='Units'
+        )
+        fig_slow.update_traces(
+            marker_color='#ef4444',
+            textposition='inside',
+            texttemplate='%{text:,.0f}'
+        )
+        fig_slow.update_layout(
+            height=400, 
+            yaxis={'categoryorder':'total descending'},
+            showlegend=False,
+            plot_bgcolor='rgba(0,0,0,0)', 
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        st.plotly_chart(fig_slow, use_container_width=True)
+
+# ---> TAB 3: ABOUT
+with selected_tab[2]:
+    st.markdown("""
+    <div style='text-align: center; padding: 40px 20px 20px 20px;'>
+        <h1 style='font-size: 28px; font-weight: 700; margin: 0 0 8px 0; color: var(--text-color);'>Maven Toys Dashboard</h1>
+        <p style='font-size: 14px; color: #94a3b8; max-width: 600px; margin: 0 auto;'>
+            Interactive sales analytics dashboard for Maven Toys - a fictional toy store chain operating across Mexico.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Dataset Stats
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Transactions", f"{len(df_sales):,}")
+    with col2:
+        st.metric("Stores", df_sales['Store_Name'].nunique())
+    with col3:
+        st.metric("Cities", df_sales['Store_City'].nunique())
+    with col4:
+        st.metric("Period", f"{df_sales['Date'].min().year}-{df_sales['Date'].max().year}")
+    
+    st.markdown("---")
+    
+    # Key Insights Section
+    st.markdown('<h3 style="display: flex; align-items: center; gap: 8px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Key Insights from Analysis</h3>', unsafe_allow_html=True)
+    
+    # Calculate insights dynamically
+    total_revenue = df_sales['Revenue'].sum()
+    total_profit = df_sales['Profit'].sum()
+    profit_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
+    top_city = df_sales.groupby('Store_City')['Revenue'].sum().idxmax()
+    top_category = df_sales.groupby('Product_Category')['Revenue'].sum().idxmax()
+    top_product = df_sales.groupby('Product_Name')['Profit'].sum().idxmax()
+    avg_transaction = total_revenue / len(df_sales) if len(df_sales) > 0 else 0
+    
+    col_ins1, col_ins2 = st.columns(2)
+    
+    with col_ins1:
+        st.markdown('<p style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> <strong>Revenue Performance</strong></p>', unsafe_allow_html=True)
+        st.markdown(f"""
+- Total Revenue: **${total_revenue:,.0f}**
+- Total Profit: **${total_profit:,.0f}**
+- Overall Profit Margin: **{profit_margin:.1f}%**
+- Avg Transaction Value: **${avg_transaction:.2f}**
+        """)
+        
+    with col_ins2:
+        st.markdown('<p style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 22V8.3c0-.93 0-1.4.2-1.7a1.5 1.5 0 0 1 .6-.6C11.1 6 11.6 6 12.6 6h.8c1 0 1.5 0 1.8.2.3.1.5.3.6.6.2.3.2.77.2 1.7V22"/></svg> <strong>Top Performers</strong></p>', unsafe_allow_html=True)
+        st.markdown(f"""
+- Best City: **{top_city}**
+- Top Category: **{top_category}**
+- Most Profitable Product: **{top_product}**
+- Total Products: **{df_sales['Product_Name'].nunique()}**
+        """)
+    
+    st.markdown("---")
+    
+    # Dataset Features
+    st.markdown('<h3 style="display: flex; align-items: center; gap: 8px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Dataset Features</h3>', unsafe_allow_html=True)
+    st.markdown("""
+- **5 Product Categories:** Toys, Art & Crafts, Games, Electronics, Sports & Outdoors
+- **4 Store Location Types:** Airport, Downtown, Commercial, Residential
+- **29 Cities across Mexico** with varying market characteristics
+- **Inventory data** for stock level monitoring and low-stock alerts
+    """)
+    
+    st.markdown("---")
+    
+    # Technology & Source
+    col_tech1, col_tech2 = st.columns(2)
+    with col_tech1:
+        st.markdown('<p style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg> <strong>Built With</strong></p>', unsafe_allow_html=True)
+        st.markdown("""
+- Streamlit (Web Framework)
+- Plotly (Interactive Charts)
+- Pandas (Data Processing)
+        """)
+    with col_tech2:
+        st.markdown('<p style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> <strong>Data Source</strong></p>', unsafe_allow_html=True)
+        st.markdown("""
+- [Maven Analytics](https://mavenanalytics.io/data-playground/mexico-toy-sales)
+        """)
