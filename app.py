@@ -777,14 +777,15 @@ def get_icon_svg(cat):
     return '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>'
 
 # Generate HTML Table
-# Headers matching the data types in user's snippet (Price, Sold count)
-table_html = '<table class="prod-table"><thead><tr><th>Product</th><th>Price</th><th>Sold</th><th>Profit</th></tr></thead><tbody>'
+# Headers matching the data types in user's snippet (Price, Cost, Sold count)
+table_html = '<table class="prod-table"><thead><tr><th>Product</th><th>Price</th><th>Cost</th><th>Sold</th><th>Profit</th></tr></thead><tbody>'
 
 for _, row in prod_perf.iterrows():
     icon = get_icon_svg(row['Product_Category'])
-    # Calc average price for the Price column
-    # Since we're grouping by product, we need to get the price from the original data
-    product_price = curr_sales[curr_sales['Product_Name'] == row['Product_Name']]['Product_Price'].iloc[0] if len(curr_sales[curr_sales['Product_Name'] == row['Product_Name']]) > 0 else 0
+    # Since we're grouping by product, we need to get the price and cost from the original data
+    product_data = curr_sales[curr_sales['Product_Name'] == row['Product_Name']]
+    product_price = product_data['Product_Price'].iloc[0] if len(product_data) > 0 else 0
+    product_cost = product_data['Product_Cost'].iloc[0] if len(product_data) > 0 else 0
     
     # IMPORTANT: No indentation in HTML string to prevent markdown code block rendering
     table_html += f"""<tr>
@@ -793,6 +794,7 @@ for _, row in prod_perf.iterrows():
 <span class="prod-name">{row['Product_Name']}</span>
 </div></td>
 <td><span class="prod-val">${product_price:,.2f}</span></td>
+<td><span class="prod-val">${product_cost:,.2f}</span></td>
 <td><span class="prod-val">{row['Units']:,.0f}</span></td>
 <td><span class="prod-val">${row['Profit']:,.0f}</span></td>
 </tr>"""
