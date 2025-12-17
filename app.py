@@ -945,7 +945,7 @@ with selected_tab[1]:
         
         # Monthly Trend - More Insightful (Uses full data for proper seasonality)
         st.markdown("#### Monthly Sales Trend (Seasonality)")
-        monthly_sales = df_sales.set_index('Date').resample('M').agg({
+        monthly_sales = df_sales.set_index('Date').resample('ME').agg({
             'Revenue': 'sum',
             'Profit': 'sum'
         }).reset_index()
