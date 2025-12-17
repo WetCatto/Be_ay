@@ -644,7 +644,7 @@ with selected_tab[0]:
         )
         fig_ts.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
         fig_ts.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-        st.plotly_chart(fig_ts, use_container_width=True)
+        st.plotly_chart(fig_ts, width='stretch')
 
     with col_l2:
         st.markdown("### Return Rate Trend")
@@ -680,7 +680,7 @@ with selected_tab[0]:
         )
         fig_rr.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
         fig_rr.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-        st.plotly_chart(fig_rr, use_container_width=True)
+        st.plotly_chart(fig_rr, width='stretch')
 
 
     # ---> BLOCK 3: SALES BY LOCATION & PRODUCT MIX
@@ -744,7 +744,7 @@ with selected_tab[0]:
         )
         fig_sb.update_traces(textfont=dict(color='white'))
         fig_sb.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig_sb, use_container_width=True)
+        st.plotly_chart(fig_sb, width='stretch')
 
     # ---> BLOCK 4: PRODUCT PERFORMANCE (Table)
     col_p1, col_p2 = st.columns([3, 1])
@@ -896,7 +896,7 @@ with selected_tab[1]:
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)'
     )
-    st.plotly_chart(fig_corr, use_container_width=True)
+    st.plotly_chart(fig_corr, width='stretch')
     
     st.markdown("---")
     
@@ -927,7 +927,7 @@ with selected_tab[1]:
             )
             fig_loc_rev.update_traces(textposition='inside', texttemplate='$%{text:,.0f}')
             fig_loc_rev.update_layout(height=350, legend_title_text='', plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig_loc_rev, use_container_width=True)
+            st.plotly_chart(fig_loc_rev, width='stretch')
         
         with col_loc2:
             st.markdown("#### Category Revenue Breakdown")
@@ -941,7 +941,7 @@ with selected_tab[1]:
             )
             fig_cat.update_traces(textposition='inside', textinfo='label+percent')
             fig_cat.update_layout(height=350, showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig_cat, use_container_width=True)
+            st.plotly_chart(fig_cat, width='stretch')
         
         # Monthly Trend - More Insightful (Uses full data for proper seasonality)
         st.markdown("#### Monthly Sales Trend (Seasonality)")
@@ -966,7 +966,7 @@ with selected_tab[1]:
         )
         fig_monthly.update_xaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
         fig_monthly.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
-        st.plotly_chart(fig_monthly, use_container_width=True)
+        st.plotly_chart(fig_monthly, width='stretch')
     else:
         st.info("Store location data not available in dataset")
     
@@ -1006,7 +1006,7 @@ with selected_tab[1]:
             plot_bgcolor='rgba(0,0,0,0)', 
             paper_bgcolor='rgba(0,0,0,0)'
         )
-        st.plotly_chart(fig_high, use_container_width=True)
+        st.plotly_chart(fig_high, width='stretch')
     
     with col_vel2:
         st.markdown('<h4 style="display: flex; align-items: center; gap: 6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg> Slow Moving (Bottom 10)</h4>', unsafe_allow_html=True)
@@ -1030,7 +1030,7 @@ with selected_tab[1]:
             plot_bgcolor='rgba(0,0,0,0)', 
             paper_bgcolor='rgba(0,0,0,0)'
         )
-        st.plotly_chart(fig_slow, use_container_width=True)
+        st.plotly_chart(fig_slow, width='stretch')
 
 # ---> TAB 3: ABOUT
 with selected_tab[2]:
